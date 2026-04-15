@@ -1,0 +1,17 @@
+# Python
+**/__pycache__/
+*.pyc
+
+# Node
+**/node_modules/
+
+# Env files (keep only examples)
+.env
+.env.*
+backend/.env
+frontend-admin/.env
+frontend-game/.env
+!.env.example
+!backend/.env.example
+!frontend-admin/.env.example
+!frontend-game/.env.example
