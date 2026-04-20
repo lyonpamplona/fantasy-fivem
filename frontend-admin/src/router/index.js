@@ -1,43 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AdminLogin from '../views/AdminLogin.vue'
-import AdminDashboard from '../views/AdminDashboard.vue'
 
 const routes = [
-  { 
-    path: '/', 
-    redirect: '/login' 
-  },
+  { path: '/', redirect: '/login' },
   { 
     path: '/login', 
-    component: AdminLogin,
+    component: () => import('../views/AdminLogin.vue'),
     beforeEnter: (to, from, next) => {
-      if (localStorage.getItem('admin_token')) {
-        next('/dashboard')
-      } else {
-        next()
-      }
+      localStorage.getItem('admin_token') ? next('/dashboard') : next()
     }
   },
   { 
     path: '/dashboard', 
-    component: AdminDashboard,
+    component: () => import('../views/AdminDashboard.vue'),
     beforeEnter: (to, from, next) => {
-      if (localStorage.getItem('admin_token')) {
-        next()
-      } else {
-        next('/login')
-      }
+      localStorage.getItem('admin_token') ? next() : next('/login')
     }
   },
-  { 
-    path: '/:pathMatch(.*)*', 
-    redirect: '/dashboard' 
-  }
+  { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-
-export default router
+export default createRouter({ history: createWebHistory(), routes })

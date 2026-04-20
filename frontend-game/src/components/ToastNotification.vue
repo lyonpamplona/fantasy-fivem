@@ -1,16 +1,22 @@
 <template>
   <Transition name="toast">
-    <div v-if="toastStore.show" class="fixed bottom-10 right-10 z-[9999] flex items-center gap-4 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border backdrop-blur-xl transition-all" :class="toastStore.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30' : (toastStore.type === 'error' ? 'bg-rose-950/90 border-rose-500/30' : 'bg-amber-950/90 border-amber-500/30')">
-      <span class="material-symbols-rounded text-3xl drop-shadow-md" :class="toastStore.type === 'success' ? 'text-emerald-400' : (toastStore.type === 'error' ? 'text-rose-400' : 'text-amber-400')">
-        {{ toastStore.type === 'success' ? 'check_circle' : (toastStore.type === 'error' ? 'error' : 'warning') }}
-      </span>
-      <div>
-        <h4 class="font-black text-white text-sm uppercase tracking-wider mb-0.5">{{ toastStore.title }}</h4>
-        <p class="font-medium text-xs" :class="toastStore.type === 'success' ? 'text-emerald-200' : (toastStore.type === 'error' ? 'text-rose-200' : 'text-amber-200')">{{ toastStore.message }}</p>
+    <div v-if="toastStore.show" class="fixed top-6 right-6 z-[9999] min-w-[280px] max-w-sm flex items-start gap-4 p-4 bg-[#0a0a0c] border shadow-[0_10px_30px_rgba(0,0,0,0.8)] clip-esports-small transition-all" :class="toastStore.type === 'success' ? 'border-emerald-600' : (toastStore.type === 'error' ? 'border-rose-600' : 'border-yellow-500')">
+      
+      <div class="mt-0.5 flex-shrink-0">
+        <span class="material-symbols-rounded text-lg drop-shadow-md" :class="toastStore.type === 'success' ? 'text-emerald-500' : (toastStore.type === 'error' ? 'text-rose-500' : 'text-yellow-500')">
+          {{ toastStore.type === 'success' ? 'check_circle' : (toastStore.type === 'error' ? 'error' : 'warning') }}
+        </span>
       </div>
-      <button @click="toastStore.closeToast" class="ml-4 text-white/50 hover:text-white transition-colors">
+
+      <div class="flex-1 flex flex-col">
+        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-white mb-0.5">{{ toastStore.title }}</h4>
+        <p class="text-[10px] font-mono leading-tight text-zinc-400">{{ toastStore.message }}</p>
+      </div>
+
+      <button @click="toastStore.closeToast" class="ml-2 text-zinc-600 hover:text-white transition-colors flex-shrink-0">
         <span class="material-symbols-rounded text-sm">close</span>
       </button>
+      
     </div>
   </Transition>
 </template>
@@ -21,8 +27,10 @@ const toastStore = useToastStore()
 </script>
 
 <style scoped>
+.clip-esports-small { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+
 .toast-enter-active,
 .toast-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .toast-enter-from,
-.toast-leave-to { opacity: 0; transform: translateY(50px) scale(0.9); }
+.toast-leave-to { opacity: 0; transform: translateX(50px) scale(0.95); }
 </style>

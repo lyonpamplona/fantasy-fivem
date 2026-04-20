@@ -5,7 +5,7 @@ export const useToastStore = defineStore('toast', () => {
   const show = ref(false)
   const title = ref('')
   const message = ref('')
-  const type = ref('success') // 'success', 'error', ou 'warning'
+  const type = ref('success') 
   let timeout = null
 
   const showToast = (newTitle, newMessage, newType = 'success') => {
@@ -14,7 +14,7 @@ export const useToastStore = defineStore('toast', () => {
     type.value = newType
     show.value = true
 
-    // Reseta o timer se o usuário clicar em vários botões seguidos
+    
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => {
       show.value = false
