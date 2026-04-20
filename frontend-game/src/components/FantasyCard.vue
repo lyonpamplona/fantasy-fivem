@@ -12,17 +12,20 @@
         </div>
       </div>
 
-      <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col overflow-visible bg-zinc-950/40 backdrop-blur-md clip-esports border-l-2 border-b-2 shadow-2xl transition-colors duration-500" :class="theme.borderClass">
+      <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col overflow-visible bg-zinc-950/40 backdrop-blur-md clip-esports border-l-2 border-b-2 shadow-2xl transition-colors duration-500" :class="isForged ? 'border-amber-500' : theme.borderClass">
         
-        <div class="absolute inset-y-4 left-1.5 w-[3px] opacity-30" style="background: repeating-linear-gradient(to bottom, currentColor 0, currentColor 2px, transparent 2px, transparent 4px);" :class="theme.textColor"></div>
-        <div class="absolute inset-y-4 right-1.5 w-[3px] opacity-30" style="background: repeating-linear-gradient(to bottom, currentColor 0, currentColor 2px, transparent 2px, transparent 4px);" :class="theme.textColor"></div>
+        <div class="absolute inset-y-4 left-1.5 w-[3px] opacity-30" style="background: repeating-linear-gradient(to bottom, currentColor 0, currentColor 2px, transparent 2px, transparent 4px);" :class="isForged ? 'text-amber-500' : theme.textColor"></div>
+        <div class="absolute inset-y-4 right-1.5 w-[3px] opacity-30" style="background: repeating-linear-gradient(to bottom, currentColor 0, currentColor 2px, transparent 2px, transparent 4px);" :class="isForged ? 'text-amber-500' : theme.textColor"></div>
         
         <div class="absolute top-8 left-1/2 -translate-x-1/2 text-[5px] font-black tracking-[0.5em] text-white/10 uppercase pointer-events-none">TACTICAL_INTERFACE_v4.2</div>
 
         <div class="absolute top-1.5 left-2 right-2 flex justify-between items-start z-30">
           <span class="text-2xl font-black font-mono text-white leading-none italic drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">{{ card.level || 1 }}</span>
           <div class="flex flex-col items-end gap-0.5">
-            <span class="text-[6px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-black/80 border" :class="[theme.borderClass, theme.textColor]">{{ card.rarity }}</span>
+            <div class="flex items-center gap-1">
+              <span class="text-[6px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-black/80 border" :class="[theme.borderClass, theme.textColor]">{{ card.rarity }}</span>
+              <span v-if="isForged" class="text-[6px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-black/80 border border-amber-500 text-amber-400">FORGED</span>
+            </div>
             <span class="text-[4px] font-mono text-white/30 uppercase tracking-tighter">EXP_LEVEL_0{{ card.level }}</span>
           </div>
         </div>
@@ -67,6 +70,8 @@ const emit = defineEmits(['cardClick'])
 const localIsFlipped = ref(props.forceReveal)
 const isFlashing = ref(false)
 
+const isForged = computed(() => props.card.is_forged === true)
+
 watch(() => props.forceReveal, (newVal) => { 
   if (newVal && !localIsFlipped.value && props.isInteractive) {
     triggerEpicReveal()
@@ -99,7 +104,8 @@ const theme = computed(() => {
     COMMON: { borderClass: 'border-zinc-500', textColor: 'text-zinc-400', glowBg: 'bg-zinc-500' },
     RARE: { borderClass: 'border-blue-500', textColor: 'text-blue-400', glowBg: 'bg-blue-600' },
     EPIC: { borderClass: 'border-purple-600', textColor: 'text-purple-400', glowBg: 'bg-purple-600' },
-    LEGENDARY: { borderClass: 'border-emerald-500', textColor: 'text-emerald-400', glowBg: 'bg-emerald-500' }
+    LEGENDARY: { borderClass: 'border-emerald-500', textColor: 'text-emerald-400', glowBg: 'bg-emerald-500' },
+    MYTHIC: { borderClass: 'border-amber-500', textColor: 'text-amber-400', glowBg: 'bg-amber-500' }
   }
   return themes[props.card.rarity] || themes.COMMON
 })

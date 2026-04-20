@@ -35,11 +35,10 @@
         
         <div class="flex flex-col w-full lg:w-1/3">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-[9px] font-black uppercase tracking-widest text-amber-500">Injeção de Capital</span>
+            <span class="text-[9px] font-black uppercase tracking-widest text-amber-500">Injeção de C$</span>
             <span class="text-[10px] font-mono text-white">{{ forgeBoostCoins.toLocaleString() }} C$</span>
           </div>
           <input type="range" v-model.number="forgeBoostCoins" min="0" max="50000" step="1000" class="w-full accent-amber-500 h-1 bg-zinc-900 rounded-lg appearance-none cursor-pointer">
-          <span class="text-[8px] text-zinc-500 font-mono mt-2 text-center">+ C$ aumenta a chance de drops raros</span>
         </div>
 
         <button @click="executeForge" :disabled="selectedForForge.length !== 5 || isProcessing" class="w-full lg:w-auto px-8 py-4 bg-amber-600 hover:bg-amber-500 text-black text-[11px] font-black uppercase tracking-[0.3em] transition-all clip-esports-small disabled:opacity-20 disabled:hover:bg-amber-600 shadow-[0_0_20px_rgba(217,119,6,0.3)] shrink-0">
@@ -49,7 +48,7 @@
 
       <div class="relative z-10 bg-[#050505]/80 p-4 flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
         <div class="text-[9px] font-black uppercase tracking-widest text-amber-500/70 flex items-center gap-2 w-full sm:w-auto justify-center">
-          <span class="material-symbols-rounded text-sm">radar</span> Probabilidade Estimada
+          <span class="material-symbols-rounded text-sm">radar</span> Probabilidade
         </div>
         <div class="flex flex-wrap justify-center sm:justify-end gap-3 sm:gap-6 w-full">
           <div class="flex flex-col items-center"><span class="text-[8px] text-zinc-500 uppercase tracking-widest">Comum</span><span class="text-[10px] font-mono font-black text-zinc-300">{{ forgeProbabilities.COMMON }}%</span></div>
@@ -69,16 +68,16 @@
 
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <div v-for="pack in store.packs" :key="pack.id" class="flex flex-col items-center w-full">
-          <div class="relative w-full aspect-square flex items-center justify-center group transition-all clip-esports-small mb-2" :class="pack.pack_type === 'CLASSIFIED' ? 'bg-[#0a0000] border border-rose-900 hover:border-rose-500 shadow-[inset_0_0_15px_rgba(225,29,72,0.1)]' : 'bg-[#0a0a0c] border border-zinc-800 hover:border-emerald-500'">
-             <div class="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black z-10" :class="pack.pack_type === 'CLASSIFIED' ? 'bg-rose-600 border border-rose-400' : 'bg-emerald-600 border border-emerald-400'">
+          <div class="relative w-full aspect-square flex items-center justify-center group transition-all clip-esports-small mb-2" :class="getPackStyle(pack.pack_type).bg">
+             <div class="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black z-10 shadow-lg text-white" :class="getPackStyle(pack.pack_type).badge">
                {{ pack.amount }}
              </div>
-             <span class="material-symbols-rounded text-5xl transition-colors" :class="pack.pack_type === 'CLASSIFIED' ? 'text-rose-900 group-hover:text-rose-500 animate-pulse' : 'text-zinc-600 group-hover:text-emerald-400'">
-               {{ pack.pack_type === 'CLASSIFIED' ? 'bug_report' : 'box' }}
+             <span class="material-symbols-rounded text-5xl transition-colors" :class="getPackStyle(pack.pack_type).iconColor">
+               {{ getPackStyle(pack.pack_type).icon }}
              </span>
           </div>
-          <button @click="openPack(pack.pack_type)" :disabled="isProcessing" class="w-full py-3 bg-[#050505] border text-[9px] font-black uppercase tracking-widest transition-colors clip-esports-small disabled:opacity-50" :class="pack.pack_type === 'CLASSIFIED' ? 'border-rose-900 text-rose-500 hover:bg-rose-950/50 hover:text-white' : 'border-zinc-800 text-zinc-400 hover:bg-emerald-950/50 hover:text-white'">
-            {{ pack.pack_type === 'CLASSIFIED' ? 'DECRIPTAR' : 'Abrir Modulo' }}
+          <button @click="openPack(pack.pack_type)" :disabled="isProcessing" class="w-full py-3 bg-[#050505] border text-[9px] font-black uppercase tracking-widest transition-colors clip-esports-small disabled:opacity-50" :class="getPackStyle(pack.pack_type).button">
+            {{ getPackStyle(pack.pack_type).btnText }}
           </button>
         </div>
       </div>
@@ -117,43 +116,32 @@
 
     <div v-if="isRevealing" class="fixed inset-0 z-[200] bg-[#050505]/95 backdrop-blur-xl transition-all duration-500 overflow-y-auto">
       <div class="min-h-screen w-full flex flex-col items-center justify-center py-20 px-4 sm:px-8 relative">
-        
-        <div v-if="revealType === 'CLASSIFIED'" class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.1)_0%,transparent_60%)] bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(225,29,72,0.05)_2px,rgba(225,29,72,0.05)_4px)] pointer-events-none"></div>
+        <div v-if="revealType === 'CLASSIFIED'" class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.1)_0%,transparent_60%)] pointer-events-none"></div>
         <div v-else-if="revealType === 'FORGE'" class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,119,6,0.1)_0%,transparent_60%)] pointer-events-none"></div>
         <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1)_0%,transparent_60%)] pointer-events-none"></div>
         
         <div v-if="!showDecryptionSuccess" class="relative flex flex-col items-center animate-pulse text-center w-full my-auto">
-          <div class="w-32 h-32 border-2 flex items-center justify-center rotate-45 mb-12 shadow-2xl shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-500/50 shadow-rose-600/30 animate-[ping_1s_infinite]' : (revealType === 'FORGE' ? 'border-amber-500/50' : 'border-emerald-500/50')">
+          <div class="w-32 h-32 border-2 flex items-center justify-center rotate-45 mb-12 shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-500/50 animate-[ping_1s_infinite]' : (revealType === 'FORGE' ? 'border-amber-500/50' : 'border-emerald-500/50')">
             <div class="w-24 h-24 border flex items-center justify-center -rotate-45 shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-400/30' : (revealType === 'FORGE' ? 'border-amber-400/30' : 'border-emerald-400/30')">
               <span class="material-symbols-rounded text-6xl" :class="revealType === 'CLASSIFIED' ? 'text-rose-500' : (revealType === 'FORGE' ? 'text-amber-500' : 'text-emerald-500')">
                 {{ revealType === 'CLASSIFIED' ? 'terminal' : (revealType === 'FORGE' ? 'local_fire_department' : 'lock_open') }}
               </span>
             </div>
           </div>
-          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.2em] md:tracking-[0.4em] mb-2" :class="revealType === 'CLASSIFIED' ? 'drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]' : (revealType === 'FORGE' ? 'drop-shadow-[0_0_10px_rgba(217,119,6,0.8)]' : 'drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]')">
-            {{ revealType === 'CLASSIFIED' ? 'BYPASSING FIREWALL...' : (revealType === 'FORGE' ? 'Fusão Térmica' : 'Decodificando') }}
-          </h2>
-          <p class="text-xs font-mono tracking-widest" :class="revealType === 'CLASSIFIED' ? 'text-rose-500/70' : (revealType === 'FORGE' ? 'text-amber-500/70' : 'text-emerald-500/70')">
-            {{ revealType === 'CLASSIFIED' ? 'Acessando Node da Dark Web...' : (revealType === 'FORGE' ? 'A sintetizar nova estrutura molecular...' : 'A extrair dados dos operadores...') }}
-          </p>
-          
+          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.4em] mb-2">Processando</h2>
           <div class="w-64 h-1 bg-zinc-900 mt-8 overflow-hidden shrink-0">
             <div class="h-full w-1/2 animate-[slide_1s_ease-in-out_infinite]" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600' : (revealType === 'FORGE' ? 'bg-amber-500' : 'bg-emerald-500')"></div>
           </div>
         </div>
 
         <div v-else class="relative flex flex-col items-center transform-gpu animate-[zoomIn_0.5s_ease-out_forwards] w-full max-w-6xl mx-auto my-auto">
-          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.2em] md:tracking-[0.3em] drop-shadow-md mb-8 md:mb-12 text-center">
-            {{ revealType === 'CLASSIFIED' ? 'ACESSO CONCEDIDO' : (revealType === 'FORGE' ? 'Operador Forjado' : 'Extração Concluída') }}
-          </h2>
-          
+          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.3em] drop-shadow-md mb-12 text-center">Concluído</h2>
           <div class="flex flex-wrap justify-center gap-4 md:gap-6 w-full px-4">
-            <div v-for="(newCard, index) in revealedCards" :key="index" class="w-32 sm:w-40 md:w-48 aspect-[2/3] shrink-0 transform-gpu transition-all lg:hover:scale-105 lg:hover:-translate-y-2 animate-[zoomIn_0.5s_ease-out_forwards]" :style="`animation-delay: ${index * 0.1}s`">
+            <div v-for="(newCard, index) in revealedCards" :key="index" class="w-32 sm:w-40 md:w-48 aspect-[2/3] shrink-0 animate-[zoomIn_0.5s_ease-out_forwards]" :style="`animation-delay: ${index * 0.1}s`">
               <FantasyCard :card="newCard" :force-reveal="true" :is-interactive="false" />
             </div>
           </div>
-
-          <button @click="closeReveal" class="mt-16 shrink-0 px-12 py-4 text-black text-xs font-black uppercase tracking-widest transition-colors clip-esports-small w-full sm:w-auto" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600 hover:bg-rose-500 shadow-[0_0_20px_rgba(225,29,72,0.3)]' : (revealType === 'FORGE' ? 'bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]')">
+          <button @click="closeReveal" class="mt-16 shrink-0 px-12 py-4 text-black text-xs font-black uppercase tracking-widest clip-esports-small w-full sm:w-auto" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600 hover:bg-rose-500' : (revealType === 'FORGE' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500')">
             Continuar
           </button>
         </div>
@@ -195,9 +183,7 @@ const filterTabs = [
 
 const rarityCounts = computed(() => {
   const counts = { ALL: store.cards.length }
-  store.cards.forEach(c => {
-    counts[c.rarity] = (counts[c.rarity] || 0) + 1
-  })
+  store.cards.forEach(c => { counts[c.rarity] = (counts[c.rarity] || 0) + 1 })
   return counts
 })
 
@@ -209,12 +195,10 @@ const filteredCards = computed(() => {
 const forgeProbabilities = computed(() => {
   const weightMap = { "COMMON": 1, "RARE": 3, "EPIC": 10, "LEGENDARY": 30, "MYTHIC": 100 }
   let baseWeight = 0
-  
   selectedForForge.value.forEach(id => {
     const card = store.cards.find(c => c.id === id)
     if (card) baseWeight += (weightMap[card.rarity] || 1)
   })
-
   const boostWeight = Math.floor(forgeBoostCoins.value / 1000) * 5
   const totalWeight = baseWeight + boostWeight
 
@@ -233,6 +217,16 @@ const forgeProbabilities = computed(() => {
   }
 })
 
+const getPackStyle = (type) => {
+  if (type === 'CLASSIFIED') return { bg: 'bg-[#0a0000] border-rose-900', badge: 'bg-rose-600 border-rose-400', icon: 'bug_report', iconColor: 'text-rose-900 group-hover:text-rose-500 animate-pulse', button: 'border-rose-900 text-rose-500 hover:bg-rose-950/50 hover:text-white', btnText: 'DECRIPTAR' }
+  if (type === '1') return { bg: 'bg-zinc-950 border-zinc-800 hover:border-emerald-500', badge: 'bg-zinc-600 border-zinc-400', icon: 'box', iconColor: 'text-zinc-600 group-hover:text-emerald-400', button: 'border-zinc-800 text-zinc-400 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir' }
+  if (type === '3') return { bg: 'bg-blue-950/20 border-blue-900 hover:border-emerald-500', badge: 'bg-blue-600 border-blue-400', icon: 'inventory_2', iconColor: 'text-blue-900 group-hover:text-emerald-400', button: 'border-blue-900 text-blue-500 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir Raro' }
+  if (type === '5') return { bg: 'bg-purple-950/20 border-purple-900 hover:border-emerald-500', badge: 'bg-purple-600 border-purple-400', icon: 'all_inbox', iconColor: 'text-purple-900 group-hover:text-emerald-400', button: 'border-purple-900 text-purple-500 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir Épico' }
+  if (type === '7') return { bg: 'bg-emerald-950/20 border-emerald-900 hover:border-emerald-500', badge: 'bg-emerald-600 border-emerald-400', icon: 'deployed_code', iconColor: 'text-emerald-900 group-hover:text-emerald-400', button: 'border-emerald-900 text-emerald-500 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir Lendário' }
+  if (type === '10') return { bg: 'bg-amber-950/20 border-amber-900 hover:border-emerald-500', badge: 'bg-amber-600 border-amber-400', icon: 'treasure_chest', iconColor: 'text-amber-900 group-hover:text-emerald-400', button: 'border-amber-900 text-amber-500 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir Mítico' }
+  return { bg: 'bg-zinc-900 border-zinc-800 hover:border-emerald-500', badge: 'bg-emerald-600 border-emerald-400', icon: 'box', iconColor: 'text-emerald-400 group-hover:text-emerald-300', button: 'border-zinc-800 text-emerald-400 hover:bg-emerald-950/50 hover:text-white', btnText: 'Abrir' }
+}
+
 const isContractActive = (card) => {
   if (!card.contract_end_date) return false
   return new Date(card.contract_end_date) > new Date()
@@ -246,20 +240,12 @@ const toggleForgeMode = () => {
 }
 
 const handleCardClick = (card) => {
-  if (isContractActive(card)) {
-    toastStore.showToast('Acesso Negado', 'Ativo encontra-se em operação e não pode ser alterado.', 'warning')
-    return
-  }
-
+  if (isContractActive(card)) return
   if (isForgeMode.value) {
     if (selectedForForge.value.includes(card.id)) {
       selectedForForge.value = selectedForForge.value.filter(id => id !== card.id)
     } else {
-      if (selectedForForge.value.length >= 5) {
-        toastStore.showToast('Capacidade Máxima', 'A Forja suporta apenas 5 ativos por ciclo.', 'warning')
-        return
-      }
-      selectedForForge.value.push(card.id)
+      if (selectedForForge.value.length < 5) selectedForForge.value.push(card.id)
     }
   } else {
     selectedCard.value = card
@@ -277,7 +263,6 @@ const executeForge = async () => {
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
-    
     const res = await fetch(`${baseUrl}/api/cards/forge`, {
       method: 'POST',
       headers: store.getHeaders(),
@@ -296,15 +281,14 @@ const executeForge = async () => {
         if (store.fetchProfile) await store.fetchProfile()
       }, 1500)
     } else {
-      const errData = await res.json().catch(() => ({}))
       isRevealing.value = false
       isProcessing.value = false
-      toastStore.showToast('Falha no Protocolo', errData.detail || 'Fundos insuficientes.', 'error')
+      toastStore.showToast('Erro', 'Fundos insuficientes ou falha na forja.', 'error')
     }
   } catch (error) {
     isRevealing.value = false
     isProcessing.value = false
-    toastStore.showToast('Erro Crítico', 'Servidor de fusão offline.', 'error')
+    toastStore.showToast('Erro Crítico', 'Servidor offline.', 'error')
   }
 }
 
@@ -319,7 +303,6 @@ const openPack = async (packType) => {
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
-    
     const res = await fetch(`${baseUrl}/api/packs/open/${packType}`, {
       method: 'POST',
       headers: store.getHeaders()
@@ -336,7 +319,7 @@ const openPack = async (packType) => {
     } else {
       isRevealing.value = false
       isProcessing.value = false
-      toastStore.showToast('Falha na Extração', 'Erro ao comunicar com o cofre.', 'error')
+      toastStore.showToast('Erro', 'Falha ao extrair módulo.', 'error')
     }
   } catch (error) {
     isRevealing.value = false
@@ -376,4 +359,6 @@ onMounted(() => {
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.clip-esports { clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
+.clip-esports-small { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 </style>

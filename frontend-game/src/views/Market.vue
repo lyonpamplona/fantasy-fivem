@@ -86,8 +86,8 @@
       </div>
     </div>
 
-    <div v-if="activeTab === 'P2P'" class="relative z-10">
-      <div v-if="p2pListings.length === 0" class="flex flex-col items-center justify-center h-[40vh] opacity-30">
+    <div v-if="activeTab === 'P2P'" class="relative z-10 flex-1 overflow-y-auto pr-2 scrollbar-hide">
+      <div v-if="p2pListings.length === 0" class="flex flex-col items-center justify-center h-full opacity-30 min-h-[40vh]">
         <span class="material-symbols-rounded text-6xl mb-4 text-zinc-600 drop-shadow-lg">storefront</span>
         <h2 class="text-xs font-black text-zinc-400 uppercase tracking-[0.4em]">Nenhum Contrato Ativo</h2>
       </div>
@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useFantasyStore } from '../stores/fantasy'
 import { useToastStore } from '../stores/toast'
 import FantasyCard from '../components/FantasyCard.vue'
@@ -164,14 +164,10 @@ const bidInputs = reactive({})
 
 const isDarkWebActive = ref(false)
 const darkWebPrice = ref(50000)
+let pollInterval = null
 
-const userBalance = computed(() => {
-  return store.profile?.wallet_balance ?? store.user?.wallet_balance ?? 0
-})
-
-const myCardIds = computed(() => {
-  return store.cards ? store.cards.map(c => c.id) : []
-})
+const userBalance = computed(() => store.profile?.wallet_balance ?? store.user?.wallet_balance ?? 0)
+const myCardIds = computed(() => store.cards ? store.cards.map(c => c.id) : [])
 
 const visualPacksMeta = [
   { pack_type: "1", title: "Single", base_price: 1000, borderClass: "border-zinc-700", glowClass: "bg-zinc-600/20", coreGlowClass: "bg-zinc-400", iconColor: "text-zinc-500", btnClass: "border-zinc-700 text-zinc-400" },
@@ -197,13 +193,8 @@ const fetchStoreData = async () => {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
     const res = await fetch(`${baseUrl}/api/market/store`, { headers: store.getHeaders() })
-    if (res.ok) {
-      apiStorePacks.value = await res.json()
-    } else {
-      toastStore.showToast('Alerta Local', 'A operar em modo offline. Tabela de preços padrão ativada.', 'warning')
-    }
+    if (res.ok) apiStorePacks.value = await res.json()
   } catch (error) {
-    toastStore.showToast('Alerta Local', 'Bolsa de Suprimentos offline. Usando preços estáticos.', 'warning')
   } finally { isFetchingStore.value = false }
 }
 
@@ -253,7 +244,7 @@ const buyPack = async (packType, price) => {
       await fetchStoreData() 
     } else {
       const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Transação Negada', errData.detail || 'Fundos insuficientes ou preço alterado.', 'error')
+      toastStore.showToast('Transação Negada', errData.detail || 'Fundos insuficientes.', 'error')
       await fetchStoreData() 
     }
   } catch (error) {
@@ -292,7 +283,7 @@ const buyP2PCard = async (listingId) => {
     const baseUrl = rawUrl.replace(/\/$/, '')
     const res = await fetch(`${baseUrl}/api/market/p2p/buy/${listingId}`, { method: 'POST', headers: store.getHeaders() })
     if (res.ok) {
-      toastStore.showToast('Contrato Executado', `Operador integrado ao seu arsenal.`, 'success')
+      toastStore.showToast('Transferência P2P', 'Ativo adquirido e transferido para o Arsenal.', 'success')
       await fetchP2PListings()
       await store.fetchCards()
       if(store.fetchProfile) await store.fetchProfile().catch(()=>{})
@@ -334,12 +325,20 @@ const placeBid = async (listingId) => {
 }
 
 onMounted(() => {
-  if(store.fetchProfile) {
-    store.fetchProfile().catch(() => {})
-  }
+  if(store.fetchProfile) store.fetchProfile().catch(() => {})
   store.fetchCards()
   fetchStoreData()
   checkDarkWebStatus()
+  fetchP2PListings()
+  
+  pollInterval = setInterval(() => {
+    if (activeTab.value === 'STORE') fetchStoreData()
+    if (activeTab.value === 'DARKWEB') checkDarkWebStatus()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
 })
 </script>
 
@@ -357,4 +356,7 @@ onMounted(() => {
   0% { transform: translateX(100%); }
   100% { transform: translateX(-100%); }
 }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
