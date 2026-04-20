@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import auth, cards, packs, market, websocket, users
+from routers import auth, cards, packs, market, websocket, users, squad
 
 app = FastAPI(title="Fantasy API - Game Service")
 
@@ -28,4 +28,5 @@ app.include_router(cards.router, prefix="/api/cards", tags=["Cards"])
 app.include_router(packs.router, prefix="/api/packs", tags=["Packs"])
 app.include_router(market.router, prefix="/api/market", tags=["Market"])
 app.include_router(users.router, prefix="/api/user", tags=["User"])
+app.include_router(squad.router, prefix="/api/squad", tags=["squad"])
 app.include_router(websocket.router, tags=["WS"])

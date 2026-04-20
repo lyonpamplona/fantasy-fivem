@@ -36,6 +36,10 @@ class Card(Base):
     squad_role = Column(String, nullable=True)
     deployment_cost = Column(Integer, default=10)
     contract_points = Column(Integer, default=7)
+    
+    is_forged = Column(Boolean, default=False)
+    contract_end_date = Column(DateTime, nullable=True)
+    contract_yield = Column(Float, default=0.0)
 
     owner = relationship("Player", back_populates="cards")
     market_listing = relationship("MarketListing", back_populates="card", uselist=False)

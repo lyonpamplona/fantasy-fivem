@@ -1,132 +1,120 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
+import random
+import string
+from datetime import datetime, timedelta
+
 from database import get_db
 from models import Player, Card
 from routers.auth import get_current_user
-from routers.packs import COST_MAP
-import random
-import uuid
 
 router = APIRouter()
 
-class CardRole(BaseModel):
-    card_id: int
-    role: str
+class ForgeRequest(BaseModel):
+    card_ids: List[int]
 
-class SquadUpdate(BaseModel):
-    squad: List[CardRole]
+class ContractRequest(BaseModel):
+    duration_days: int
+
+def generate_serial():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 @router.get("/user/me")
 async def get_my_cards(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
-    cards = (await db.execute(select(Card).options(selectinload(Card.market_listing)).where(Card.owner_id == current_player.id))).scalars().all()
-    return [{
-        "id": c.id, "serial_number": c.serial_number, "player_nickname": c.player_nickname,
-        "rarity": c.rarity, "level": c.level, "kills": c.kills, "headshots": c.headshots,
-        "float_value": c.float_value, "squad_position": c.squad_position,
-        "squad_role": getattr(c, 'squad_role', None),
-        "deployment_cost": c.deployment_cost, "contract_points": c.contract_points,
-        "is_listed": c.market_listing is not None,
-        "listing_id": c.market_listing.id if c.market_listing else None
-    } for c in cards]
+    result = await db.execute(select(Card).where(Card.owner_id == current_player.id))
+    return result.scalars().all()
 
-@router.post("/user/me/squad")
-async def update_squad(payload: SquadUpdate, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
-    if len(payload.squad) > 5:
-        raise HTTPException(status_code=400)
+@router.post("/forge")
+async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    if len(payload.card_ids) != 5:
+        raise HTTPException(status_code=400, detail="A Forja exige exatamente 5 operadores.")
+
+    result = await db.execute(select(Card).where(Card.id.in_(payload.card_ids), Card.owner_id == current_player.id))
+    cards_to_forge = result.scalars().all()
+
+    if len(cards_to_forge) != 5:
+        raise HTTPException(status_code=400, detail="Operadores inválidos ou não pertencem ao seu arsenal.")
+
+    for card in cards_to_forge:
+        if getattr(card, 'contract_end_date', None) and card.contract_end_date > datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Não pode forjar operadores em missão (Contrato).")
+        if getattr(card, 'squad_position', None) is not None:
+            raise HTTPException(status_code=400, detail="Remova os operadores do Esquadrão antes da Forja.")
+
+    # Calcula o "Peso" do sacrifício para melhorar levemente as chances (FOMO)
+    weight_map = {"COMMON": 1, "RARE": 3, "EPIC": 10, "LEGENDARY": 30, "MYTHIC": 100}
+    total_weight = sum(weight_map.get(c.rarity, 1) for c in cards_to_forge)
+
+    base_forge_cost = 1000
+    if current_player.wallet_balance < base_forge_cost:
+        raise HTTPException(status_code=400, detail=f"A Forja requer {base_forge_cost} C$.")
+    current_player.wallet_balance -= base_forge_cost
+
+    # Lógica RNG - Drop Aleatório com peso dinâmico
+    chance_mythic = min(0.05, 0.005 + (total_weight * 0.0001))
+    chance_legendary = min(0.15, 0.02 + (total_weight * 0.0005))
+    chance_epic = min(0.30, 0.10 + (total_weight * 0.001))
+    chance_rare = 0.35
     
-    card_ids = [item.card_id for item in payload.squad]
-    
-    selected_cards = (await db.execute(
-        select(Card).options(selectinload(Card.market_listing)).where(Card.id.in_(card_ids), Card.owner_id == current_player.id)
-    )).scalars().all()
-    
-    if len(selected_cards) != len(card_ids):
-        raise HTTPException(status_code=400)
-        
-    for c in selected_cards:
-        if c.market_listing is not None:
-            raise HTTPException(status_code=400)
-        if c.contract_points <= 0 and c.squad_position is None:
-            raise HTTPException(status_code=400)
-            
-    total_cost = sum(c.deployment_cost for c in selected_cards)
-    if total_cost > 100:
-        raise HTTPException(status_code=400)
-        
-    current_squad = (await db.execute(
-        select(Card).where(Card.owner_id == current_player.id, Card.squad_position != None)
-    )).scalars().all()
-    
-    for c in current_squad:
-        c.squad_position = None
-        c.squad_role = None
-        
-    for i, item in enumerate(payload.squad):
-        card = next(c for c in selected_cards if c.id == item.card_id)
-        card.squad_position = i + 1
-        card.squad_role = item.role
-        if card.contract_points > 0:
-            card.contract_points -= 1
-        
-    await db.commit()
-    return {"status": "success", "total_cost": total_cost}
+    roll = random.random()
+    if roll < chance_mythic:
+        new_rarity = "MYTHIC"
+    elif roll < chance_mythic + chance_legendary:
+        new_rarity = "LEGENDARY"
+    elif roll < chance_mythic + chance_legendary + chance_epic:
+        new_rarity = "EPIC"
+    elif roll < chance_mythic + chance_legendary + chance_epic + chance_rare:
+        new_rarity = "RARE"
+    else:
+        new_rarity = "COMMON"
 
-@router.post("/burn")
-async def burn_cards(card_ids: List[int], db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
-    if not (5 <= len(card_ids) <= 10):
-        raise HTTPException(status_code=400)
+    # Apaga as cartas antigas
+    for card in cards_to_forge:
+        await db.delete(card)
 
-    cards_to_burn = (await db.execute(
-        select(Card).options(selectinload(Card.market_listing)).where(Card.id.in_(card_ids), Card.owner_id == current_player.id)
-    )).scalars().all()
-
-    if len(cards_to_burn) != len(card_ids):
-        raise HTTPException(status_code=400)
-
-    for c in cards_to_burn:
-        if c.squad_position is not None or c.market_listing is not None:
-            raise HTTPException(status_code=400)
-
-    rarities = [c.rarity for c in cards_to_burn]
-    dominant_rarity = max(set(rarities), key=rarities.count)
-    upgrade_map = {"COMMON": "RARE", "RARE": "EPIC", "EPIC": "LEGENDARY", "LEGENDARY": "LEGENDARY"}
-    new_rarity = upgrade_map.get(dominant_rarity, "RARE")
-
-    for c in cards_to_burn:
-        await db.delete(c)
-
-    success_chance = {5: 20, 6: 36, 7: 52, 8: 68, 9: 84, 10: 100}.get(len(card_ids), 0)
-    roll = random.randint(1, 100)
-
-    if roll > success_chance:
-        await db.commit()
-        return {"status": "failed"}
-
+    # Cria a nova carta
     new_card = Card(
         owner_id=current_player.id,
-        serial_number=str(uuid.uuid4()).split("-")[0].upper(),
-        player_nickname=f"FORGED_{random.randint(100,999)}",
+        player_nickname=cards_to_forge[0].player_nickname,
         rarity=new_rarity,
-        level=1,
-        kills=random.randint(30, 100),
-        headshots=random.randint(10, 50),
-        float_value=round(random.uniform(0.001, 0.050), 4),
-        deployment_cost=COST_MAP.get(new_rarity, 10),
-        contract_points=7
+        serial_number=f"FRG-{generate_serial()}",
+        is_forged=True,
+        float_value=round(random.uniform(0.001, 0.999), 4),
+        kills=random.randint(0, 50),
+        headshots=random.randint(0, 20)
     )
+    
     db.add(new_card)
     await db.commit()
     await db.refresh(new_card)
+    
+    return {"status": "success", "new_card": new_card, "new_balance": current_player.wallet_balance}
 
-    return {
-        "status": "success",
-        "card": {
-            "id": new_card.id, "serial_number": new_card.serial_number, "player_nickname": new_card.player_nickname,
-            "rarity": new_card.rarity, "level": new_card.level, "kills": new_card.kills, "headshots": new_card.headshots,
-            "float_value": new_card.float_value, "deployment_cost": new_card.deployment_cost, "contract_points": new_card.contract_points
-        }
-    }
+@router.post("/{card_id}/contract")
+async def sign_contract(card_id: int, payload: ContractRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    if payload.duration_days not in [3, 7, 14]:
+        raise HTTPException(status_code=400, detail="Duração de contrato inválida.")
+
+    result = await db.execute(select(Card).where(Card.id == card_id, Card.owner_id == current_player.id))
+    card = result.scalars().first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Ativo não encontrado.")
+
+    if getattr(card, 'contract_end_date', None) and card.contract_end_date > datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Ativo já se encontra em operação.")
+
+    if card.squad_position is not None:
+        raise HTTPException(status_code=400, detail="Retire o ativo do Esquadrão Tático antes de assinar contrato.")
+
+    yield_multiplier = {"COMMON": 1.0, "RARE": 2.5, "EPIC": 5.0, "LEGENDARY": 12.0, "MYTHIC": 25.0}.get(card.rarity, 1.0)
+    total_yield = (payload.duration_days * 150) * yield_multiplier
+
+    card.contract_end_date = datetime.utcnow() + timedelta(days=payload.duration_days)
+    card.contract_yield = total_yield
+
+    await db.commit()
+    return {"status": "success", "yield_expected": total_yield, "end_date": card.contract_end_date}

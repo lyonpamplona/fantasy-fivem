@@ -1,123 +1,131 @@
 <template>
-  <div class="h-full flex flex-col pb-10 bg-[#050505]">
-    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-10 pb-6 border-b border-zinc-900 gap-6">
+  <div class="h-full flex flex-col pb-10 bg-[#050505] relative">
+    
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-zinc-900 gap-6">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center clip-esports shadow-[0_0_15px_rgba(0,0,0,1)]">
-          <span class="material-symbols-rounded text-white text-2xl">style</span>
+        <div class="w-12 h-12 bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center clip-esports shadow-[0_0_15px_rgba(0,0,0,1)] transition-colors" :class="isForgeMode ? 'border-amber-600 shadow-[0_0_20px_rgba(217,119,6,0.3)]' : ''">
+          <span class="material-symbols-rounded text-2xl transition-colors" :class="isForgeMode ? 'text-amber-500' : 'text-emerald-500'">{{ isForgeMode ? 'local_fire_department' : 'style' }}</span>
         </div>
         <div>
-          <h1 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-md">Arsenal</h1>
-          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-1">Data & Assets Storage</p>
+          <h1 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-md">Arsenal Tático</h1>
+          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-1">{{ isForgeMode ? 'Protocolo de Fusão Ativo' : 'Gestão de Ativos Pessoais' }}</p>
         </div>
       </div>
-      
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="bg-[#0a0a0c] border border-zinc-800 p-1 flex gap-1 clip-esports-small">
-          <button v-for="f in ['ALL', 'COMMON', 'RARE', 'EPIC', 'LEGENDARY']" :key="f" @click="setFilter(f)" class="px-5 py-2 text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-300 clip-esports-small" :class="activeFilter === f ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-white'">
-            {{ f === 'ALL' ? 'Todos' : f }}
-          </button>
-        </div>
-        
-        <button @click="toggleForgeMode" class="px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 border clip-esports-small" :class="isForgeMode ? 'bg-rose-950/50 border-rose-900 text-rose-500 hover:bg-rose-600 hover:text-black' : 'bg-[#0a0a0c] border-zinc-800 text-zinc-500 hover:bg-white hover:text-black'">
-          <span class="material-symbols-rounded text-sm">{{ isForgeMode ? 'close' : 'bolt' }}</span>
-          {{ isForgeMode ? 'Abortar' : 'Protocolo Forja' }}
+
+      <div class="flex gap-4">
+        <button @click="toggleForgeMode" class="px-6 py-3 border text-[10px] font-black uppercase tracking-[0.2em] transition-all clip-esports-small flex items-center gap-2" :class="isForgeMode ? 'bg-amber-950/40 text-amber-500 border-amber-900/50 shadow-[0_0_15px_rgba(217,119,6,0.2)]' : 'bg-[#0a0a0c] text-zinc-500 border-zinc-800 hover:text-amber-500 hover:border-amber-900/50'">
+          <span class="material-symbols-rounded text-sm">whatshot</span>
+          {{ isForgeMode ? 'Cancelar Fusão' : 'Ativar Forja' }}
         </button>
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar transform-gpu">
-      <div v-if="store.packs.length > 0" class="mb-12">
-        <h2 class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
-          <span class="w-8 h-[1px] bg-zinc-800"></span> Cargas Criptografadas
-        </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-           <div v-for="pack in store.packs" :key="pack.pack_type" class="bg-[#0a0a0c] border border-zinc-800 p-6 flex flex-col items-center justify-center relative group cursor-pointer hover:bg-zinc-900 hover:-translate-y-2 transition-all duration-300 transform-gpu will-change-transform clip-esports" @click="openPack(pack.pack_type)">
-              <div class="absolute top-0 right-0 m-2 w-6 h-6 bg-[#050505] border border-zinc-800 flex items-center justify-center clip-esports-small">
-                <span class="text-[9px] font-mono font-black text-white">{{ pack.amount }}</span>
-              </div>
-              <span class="material-symbols-rounded text-4xl mb-3 text-zinc-600 group-hover:text-white transition-colors">inventory_2</span>
-              <h3 class="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Type {{ pack.pack_type }}</h3>
-           </div>
+    <div v-if="isForgeMode" class="mb-8 p-6 bg-amber-950/10 border border-amber-900/30 clip-esports relative overflow-hidden">
+      <div class="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(217,119,6,0.05)_4px,rgba(217,119,6,0.05)_8px)] pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <div class="flex gap-2">
+            <div v-for="i in 5" :key="i" class="w-8 h-8 border border-amber-900/50 flex items-center justify-center bg-black/50" :class="selectedForForge.length >= i ? 'bg-amber-500/20 border-amber-500' : ''">
+               <div v-if="selectedForForge.length >= i" class="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          <span class="text-xs font-mono text-amber-500">{{ selectedForForge.length }} / 5 Ativos Selecionados</span>
         </div>
+        
+        <button @click="executeForge" :disabled="selectedForForge.length !== 5 || isProcessing" class="px-8 py-4 bg-amber-600 text-black text-[11px] font-black uppercase tracking-[0.3em] transition-all clip-esports-small disabled:opacity-20 shadow-[0_0_20px_rgba(217,119,6,0.3)]">
+          {{ isProcessing ? 'Fundindo...' : 'Executar Protocolo de Fusão' }}
+        </button>
+      </div>
+    </div>
+    
+    <div v-if="store.packs && store.packs.length > 0 && !isForgeMode" class="mb-10 p-6 bg-zinc-950 border border-zinc-800 clip-esports relative shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+      <div class="flex items-center gap-3 mb-6 border-b border-zinc-900 pb-4">
+        <span class="material-symbols-rounded text-emerald-500">inventory_2</span>
+        <h2 class="text-sm font-black text-white uppercase tracking-[0.3em]">Suprimentos Fechados</h2>
       </div>
 
-      <div v-if="paginatedCards.length === 0" class="flex flex-col items-center justify-center h-[40vh] opacity-30">
-        <div class="w-20 h-20 bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center mb-6 rotate-45">
-          <span class="material-symbols-rounded text-5xl -rotate-45 text-zinc-600">analytics</span>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div v-for="pack in store.packs" :key="pack.id" class="flex flex-col items-center">
+          <div class="relative w-full aspect-square bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center group hover:border-emerald-500 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all clip-esports-small mb-2">
+             <div class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-[10px] font-black border border-emerald-400 z-10">
+               {{ pack.amount }}
+             </div>
+             <span class="material-symbols-rounded text-5xl text-zinc-600 group-hover:text-emerald-400 transition-colors" :class="{'animate-pulse text-emerald-500': openingPackType === pack.pack_type}">box</span>
+          </div>
+          <button @click="openPack(pack.pack_type)" :disabled="isProcessing" class="w-full py-2 bg-[#050505] border border-zinc-800 text-[9px] font-black text-zinc-400 hover:text-white uppercase tracking-widest hover:bg-emerald-950/50 transition-colors clip-esports-small disabled:opacity-50">
+            Abrir Modulo
+          </button>
         </div>
-        <h2 class="text-sm font-black text-zinc-500 uppercase tracking-[0.4em]">Database Vazia</h2>
       </div>
-      
-      <div v-else>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div v-for="card in paginatedCards" :key="card.id" class="w-full aspect-[2/3] relative transition-all duration-300 transform-gpu will-change-transform" :class="{'scale-95 opacity-50': isSelected(card.id)}">
-            <div v-if="isForgeMode" class="absolute -top-2 -right-2 z-30 w-8 h-8 border border-zinc-700 bg-[#050505] flex items-center justify-center transition-colors clip-esports-small" :class="{'bg-emerald-600 border-emerald-500': isSelected(card.id)}">
-              <span v-if="isSelected(card.id)" class="material-symbols-rounded text-black text-sm font-black">check</span>
-            </div>
-            <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" @cardClick="handleCardClick" />
+    </div>
+    
+    <div v-if="!store.cards.length" class="flex-1 flex flex-col items-center justify-center opacity-30">
+      <span class="material-symbols-rounded text-6xl mb-4 text-zinc-600">inventory_2</span>
+      <h2 class="text-xs font-black text-zinc-400 uppercase tracking-[0.4em]">Arsenal Vazio</h2>
+    </div>
+
+    <div v-else class="flex flex-col flex-1">
+      <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide border-b border-zinc-900/50">
+        <button v-for="tab in filterTabs" :key="tab.id" @click="activeFilter = tab.id" class="px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap" :class="activeFilter === tab.id ? `text-${tab.color}-400` : 'text-zinc-600 hover:text-zinc-400'">
+          {{ tab.label }} ({{ rarityCounts[tab.id] || 0 }})
+          <div v-if="activeFilter === tab.id" class="absolute bottom-0 left-0 w-full h-0.5" :class="`bg-${tab.color}-500 shadow-[0_0_10px_currentColor]`"></div>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 px-2 pb-12">
+        <div v-for="card in filteredCards" :key="card.id" class="w-full mx-auto relative group" @click="handleCardClick(card)">
+          
+          <div v-if="isForgeMode && selectedForForge.includes(card.id)" class="absolute -inset-2 border-2 border-amber-500 z-50 pointer-events-none clip-esports animate-pulse shadow-[inset_0_0_20px_rgba(217,119,6,0.5)]"></div>
+
+          <div v-if="isContractActive(card)" class="absolute -top-3 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 clip-esports-small shadow-[0_0_15px_rgba(79,70,229,0.5)] whitespace-nowrap">
+            Operação em Curso
+          </div>
+
+          <div class="aspect-[2/3] w-full transform-gpu transition-all duration-300 relative z-10" :class="{'scale-95 opacity-50': isForgeMode && !selectedForForge.includes(card.id) && selectedForForge.length > 0, 'cursor-pointer group-hover:-translate-y-2': !isContractActive(card)}">
+            <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" />
           </div>
         </div>
         
-        <div class="flex justify-between items-center mt-14 mb-4 px-6 py-4 bg-[#0a0a0c] border border-zinc-800 clip-esports-small">
-          <span class="text-[10px] font-mono font-black text-zinc-500 uppercase tracking-widest">Índice {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, displayedCards.length) }} de {{ displayedCards.length }}</span>
-          <div class="flex gap-2">
-            <button @click="currentPage--" :disabled="currentPage === 1" class="w-10 h-10 bg-[#050505] border border-zinc-800 flex items-center justify-center hover:bg-white hover:text-black disabled:opacity-30 disabled:hover:bg-[#050505] disabled:hover:text-white transition-colors clip-esports-small">
-              <span class="material-symbols-rounded text-lg">chevron_left</span>
-            </button>
-            <button @click="currentPage++" :disabled="currentPage === totalPages" class="w-10 h-10 bg-[#050505] border border-zinc-800 flex items-center justify-center hover:bg-white hover:text-black disabled:opacity-30 disabled:hover:bg-[#050505] disabled:hover:text-white transition-colors clip-esports-small">
-              <span class="material-symbols-rounded text-lg">chevron_right</span>
-            </button>
+        <div v-if="filteredCards.length === 0" class="col-span-full py-12 flex flex-col items-center justify-center opacity-40">
+          <span class="material-symbols-rounded text-4xl mb-2 text-zinc-600">search_off</span>
+          <span class="text-[10px] font-mono uppercase tracking-widest">Nenhum operador desta classe</span>
+        </div>
+      </div>
+    </div>
+
+    <CardDetailsModal v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" @contract-signed="handleContractSigned" />
+
+    <div v-if="openingPackType" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#050505]/95 backdrop-blur-xl transition-all duration-500">
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1)_0%,transparent_60%)]"></div>
+      
+      <div v-if="!showDecryptionSuccess" class="relative flex flex-col items-center animate-pulse">
+        <div class="w-32 h-32 border-2 border-emerald-500/50 flex items-center justify-center rotate-45 mb-12 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+          <div class="w-24 h-24 border border-emerald-400/30 flex items-center justify-center -rotate-45">
+            <span class="material-symbols-rounded text-6xl text-emerald-500">lock_open</span>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div v-if="isForgeMode" class="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl bg-[#050505] border-t-2 border-zinc-800 p-4 shadow-[0_0_50px_rgba(0,0,0,0.9)] z-50 flex items-center justify-between clip-esports">
-      <div class="flex items-center gap-6 pl-4">
-        <div class="w-12 h-12 bg-rose-950/50 flex items-center justify-center border border-rose-900/50 clip-esports-small">
-          <span class="material-symbols-rounded text-rose-500 text-2xl" :class="{'animate-spin': isBurning}">bolt</span>
+        <h2 class="text-2xl font-black text-white uppercase tracking-[0.4em] mb-2 drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]">Decodificando Módulo</h2>
+        <p class="text-xs font-mono text-emerald-500/70 tracking-widest">A extrair dados do operador...</p>
+        
+        <div class="w-64 h-1 bg-zinc-900 mt-8 overflow-hidden">
+          <div class="h-full bg-emerald-500 w-1/2 animate-[slide_1s_ease-in-out_infinite]"></div>
         </div>
-        <div class="flex flex-col">
-          <span class="text-[9px] font-black text-rose-500 uppercase tracking-[0.3em] mb-1">Sobrecarga de Ativos</span>
-          <div class="flex items-baseline gap-2">
-            <span class="text-3xl font-mono font-black text-white leading-none">{{ selectedCards.length }}</span>
-            <span class="text-xs font-black text-zinc-600 uppercase">/ 10 Máx</span>
+      </div>
+
+      <div v-else class="relative flex flex-col items-center transform-gpu animate-[zoomIn_0.5s_ease-out_forwards] w-full max-w-4xl px-8">
+        <h2 class="text-3xl font-black text-white uppercase tracking-[0.3em] drop-shadow-md mb-12">Operadores Extraídos</h2>
+        
+        <div class="flex flex-wrap justify-center gap-6">
+          <div v-for="(newCard, index) in revealedCards" :key="index" class="w-48 aspect-[2/3] transform-gpu transition-all hover:scale-105 hover:-translate-y-2 animate-[zoomIn_0.5s_ease-out_forwards]" :style="`animation-delay: ${index * 0.2}s`">
+            <FantasyCard :card="newCard" :force-reveal="true" :is-interactive="false" />
           </div>
         </div>
-        <div class="hidden md:flex flex-col ml-4 pl-8 border-l border-zinc-800">
-          <span class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-1">Taxa de Estabilidade</span>
-          <span class="text-2xl font-mono font-black leading-none" :class="burnChance >= 50 ? 'text-emerald-500' : 'text-rose-500'">{{ burnChance }}%</span>
-        </div>
-      </div>
-      <button @click="handleBurn" :disabled="selectedCards.length < 5 || selectedCards.length > 10 || isBurning" class="px-10 py-5 bg-white text-black font-black text-[10px] uppercase tracking-[0.3em] hover:bg-rose-600 hover:text-white transition-all duration-300 disabled:opacity-20 disabled:cursor-not-allowed clip-esports-small">
-        {{ isBurning ? 'Iniciando...' : 'Forjar Ativos' }}
-      </button>
-    </div>
 
-    <div v-if="revealedCards.length > 0" class="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 transform-gpu">
-      <div class="mb-14 text-center">
-        <div class="w-16 h-16 bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center mx-auto mb-6 clip-esports shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-          <span class="material-symbols-rounded text-white text-3xl">lock_open</span>
-        </div>
-        <h2 class="text-5xl font-black text-white tracking-tighter uppercase italic mb-3">Protocolo Descriptografado</h2>
-        <p class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Clique nos ativos para revelar o conteúdo militar.</p>
-      </div>
-      <div class="flex flex-wrap justify-center gap-6 w-full max-w-6xl">
-        <div v-for="(card, index) in revealedCards" :key="index" class="w-[160px] md:w-[200px] aspect-[2/3] transform-gpu will-change-transform animate-gacha-drop" :style="{ animationDelay: `${index * 150}ms` }">
-          <FantasyCard :card="card" :force-reveal="card.isRevealed" :is-interactive="true" @cardClick="card.isRevealed = true" />
-        </div>
-      </div>
-      <div class="mt-16 h-16">
-        <transition name="fade">
-          <button v-if="allCardsRevealed" @click="closeGacha" class="px-12 py-5 bg-emerald-600 text-black font-black text-[11px] uppercase tracking-[0.3em] hover:bg-emerald-500 transition-colors clip-esports-small shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-            Sincronizar Arsenal
-          </button>
-        </transition>
+        <button @click="closePackReveal" class="mt-16 px-12 py-4 bg-emerald-600 hover:bg-emerald-500 text-black text-xs font-black uppercase tracking-widest transition-colors clip-esports-small shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+          Continuar
+        </button>
       </div>
     </div>
-
-    <CardDetailsModal v-if="selectedModalCard" :card="selectedModalCard" @close="selectedModalCard = null" />
-    <CardDetailsModal v-if="rewardCard" :card="rewardCard" @close="rewardCard = null" />
   </div>
 </template>
 
@@ -131,113 +139,113 @@ import CardDetailsModal from '../components/CardDetailsModal.vue'
 const store = useFantasyStore()
 const toastStore = useToastStore()
 
-const activeFilter = ref('ALL')
+const selectedCard = ref(null)
 const isForgeMode = ref(false)
-const selectedCards = ref([])
-const isBurning = ref(false)
-const currentPage = ref(1)
-const itemsPerPage = 12
+const selectedForForge = ref([])
+const isProcessing = ref(false)
 
-const selectedModalCard = ref(null)
-const rewardCard = ref(null)
-const revealedCards = ref([])
+const openingPackType = ref(null)
+const showDecryptionSuccess = ref(false)
+
+const activeFilter = ref('ALL')
+const filterTabs = [
+  { id: 'ALL', label: 'Todos', color: 'emerald' },
+  { id: 'COMMON', label: 'Comum', color: 'zinc' },
+  { id: 'RARE', label: 'Raro', color: 'blue' },
+  { id: 'EPIC', label: 'Épico', color: 'purple' },
+  { id: 'LEGENDARY', label: 'Lendário', color: 'emerald' },
+  { id: 'MYTHIC', label: 'Mítico', color: 'amber' }
+]
+
+const rarityCounts = computed(() => {
+  const counts = { ALL: store.cards.length }
+  store.cards.forEach(c => {
+    counts[c.rarity] = (counts[c.rarity] || 0) + 1
+  })
+  return counts
+})
 
 const filteredCards = computed(() => {
   if (activeFilter.value === 'ALL') return store.cards
   return store.cards.filter(c => c.rarity === activeFilter.value)
 })
 
-const forgeEligibleCards = computed(() => {
-  return filteredCards.value.filter(c => c.squad_position === null && !c.is_listed)
-})
-
-const displayedCards = computed(() => {
-  return isForgeMode.value ? forgeEligibleCards.value : filteredCards.value
-})
-
-const totalPages = computed(() => Math.ceil(displayedCards.value.length / itemsPerPage) || 1)
-
-const paginatedCards = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  return displayedCards.value.slice(start, start + itemsPerPage)
-})
-
-const isSelected = (id) => selectedCards.value.includes(id)
-
-const burnChance = computed(() => {
-  const l = selectedCards.value.length;
-  if (l < 5) return 0;
-  const chances = { 5: 20, 6: 36, 7: 52, 8: 68, 9: 84, 10: 100 };
-  return chances[l] || 0;
-})
-
-const setFilter = (f) => {
-  activeFilter.value = f
-  currentPage.value = 1
+const isContractActive = (card) => {
+  if (!card.contract_end_date) return false
+  return new Date(card.contract_end_date) > new Date()
 }
 
 const toggleForgeMode = () => {
   isForgeMode.value = !isForgeMode.value
-  selectedCards.value = []
-  currentPage.value = 1
+  selectedForForge.value = []
+  selectedCard.value = null
 }
 
 const handleCardClick = (card) => {
+  if (isContractActive(card)) {
+    toastStore.showToast('Acesso Negado', 'Ativo encontra-se em operação e não pode ser alterado.', 'warning')
+    return
+  }
+
   if (isForgeMode.value) {
-    const index = selectedCards.value.indexOf(card.id)
-    if (index > -1) {
-      selectedCards.value.splice(index, 1)
+    if (selectedForForge.value.includes(card.id)) {
+      selectedForForge.value = selectedForForge.value.filter(id => id !== card.id)
     } else {
-      if (selectedCards.value.length < 10) selectedCards.value.push(card.id)
+      if (selectedForForge.value.length >= 5) {
+        toastStore.showToast('Capacidade Máxima', 'A Forja suporta apenas 5 ativos por ciclo.', 'warning')
+        return
+      }
+      selectedForForge.value.push(card.id)
     }
   } else {
-    selectedModalCard.value = card
+    selectedCard.value = card
   }
 }
 
-const handleBurn = async () => {
-  if (selectedCards.value.length < 5 || selectedCards.value.length > 10 || isBurning.value) return
-  isBurning.value = true
+const executeForge = async () => {
+  if (selectedForForge.value.length !== 5 || isProcessing.value) return
+  isProcessing.value = true
+  
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
     
-    const payload = [...selectedCards.value] 
-    
-    const res = await fetch(`${baseUrl}/api/cards/burn`, {
+    const res = await fetch(`${baseUrl}/api/cards/forge`, {
       method: 'POST',
       headers: store.getHeaders(),
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ card_ids: selectedForForge.value })
     })
     
     if (res.ok) {
-      const data = await res.json()
-      if (data.status === 'success') {
-        toastStore.showToast('Sobrecarga Estável', 'Novo ativo de elite forjado.', 'success')
-        rewardCard.value = data.card
-      } else {
-        toastStore.showToast('Falha Crítica', 'Instabilidade no núcleo. Ativos destruídos.', 'error')
-      }
-      selectedCards.value = []
+      toastStore.showToast('Forja Concluída', 'Ativos fundidos com sucesso. Novo operador gerado.', 'success')
+      selectedForForge.value = []
       isForgeMode.value = false
       await store.fetchCards()
+      if (store.fetchProfile) await store.fetchProfile()
     } else {
       const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Erro na Forja', errData.detail || 'Verifique se os ativos não estão em uso.', 'error')
-      await store.fetchCards()
-      selectedCards.value = []
+      toastStore.showToast('Falha no Protocolo', errData.detail || 'Fundos insuficientes ou incompatibilidade de ativos.', 'error')
     }
   } catch (error) {
-    toastStore.showToast('Erro Crítico', 'Servidor inacessível.', 'error')
-  } finally { 
-    isBurning.value = false 
+    toastStore.showToast('Erro Crítico', 'Servidor de fusão offline.', 'error')
+  } finally {
+    isProcessing.value = false
   }
 }
 
+const revealedCards = ref([])
+
 const openPack = async (packType) => {
+  if (isProcessing.value) return
+  isProcessing.value = true
+  openingPackType.value = packType
+  showDecryptionSuccess.value = false
+  revealedCards.value = []
+  
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
+    
     const res = await fetch(`${baseUrl}/api/packs/open/${packType}`, {
       method: 'POST',
       headers: store.getHeaders()
@@ -245,45 +253,53 @@ const openPack = async (packType) => {
     
     if (res.ok) {
       const data = await res.json()
-      await store.fetchCards()
-      await store.fetchPacks()
-      revealedCards.value = data.cards.map(c => ({ ...c, isRevealed: false }))
+      
+      setTimeout(async () => {
+        revealedCards.value = data.cards || (data.new_card ? [data.new_card] : [])
+        showDecryptionSuccess.value = true
+        await store.fetchPacks()
+        await store.fetchCards()
+      }, 2000)
     } else {
-      const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Protocolo Negado', errData.detail || 'Falha ao descriptografar a carga.', 'error')
+      openingPackType.value = null
+      isProcessing.value = false
+      toastStore.showToast('Falha na Extração', 'Erro ao comunicar com o cofre.', 'error')
     }
   } catch (error) {
-    toastStore.showToast('Erro Crítico', 'Servidor inacessível.', 'error')
+    openingPackType.value = null
+    isProcessing.value = false
+    toastStore.showToast('Erro Crítico', 'Servidor offline.', 'error')
   }
 }
 
-const closeGacha = () => {
+const closePackReveal = () => {
+  openingPackType.value = null
+  showDecryptionSuccess.value = false
   revealedCards.value = []
+  isProcessing.value = false
 }
 
-const allCardsRevealed = computed(() => {
-  return revealedCards.value.length > 0 && revealedCards.value.every(c => c.isRevealed)
-})
-
-onMounted(async () => { 
-  if(store.fetchProfile) {
-    store.fetchProfile().catch(() => {})
-  }
+const handleContractSigned = async () => {
+  selectedCard.value = null
   await store.fetchCards()
-  await store.fetchPacks()
+  if (store.fetchProfile) await store.fetchProfile()
+}
+
+onMounted(() => {
+  store.fetchCards()
+  store.fetchPacks()
 })
 </script>
 
 <style scoped>
-.clip-esports { clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
-.clip-esports-small { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-
-.animate-gacha-drop {
-  animation: dropIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
-
-@keyframes dropIn {
-  0% { transform: translateY(-100px) scale(0.8); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+@keyframes zoomIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
 }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

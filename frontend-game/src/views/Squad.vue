@@ -1,102 +1,110 @@
 <template>
-  <div class="h-full flex flex-col pb-10">
+  <div class="h-full flex flex-col pb-10 bg-[#050505]">
     
-    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 pb-6 border-b border-zinc-900 gap-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-zinc-900 gap-6">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-[#0a0a0c] border border-zinc-800 flex items-center justify-center clip-esports shadow-[0_0_15px_rgba(0,0,0,1)]">
-          <span class="material-symbols-rounded text-emerald-500 text-2xl">shield</span>
+        <div class="w-12 h-12 bg-emerald-950/30 border border-emerald-900/50 flex items-center justify-center clip-esports shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+          <span class="material-symbols-rounded text-2xl text-emerald-500">shield</span>
         </div>
         <div>
-          <h1 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-md">Roster Tático</h1>
-          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-1">Configuração de Deploy</p>
+          <h1 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-md">Esquadrão Tático</h1>
+          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-1">Simulador de Sinergia e Força de Combate</p>
         </div>
-      </div>
-      <button @click="saveSquad" :disabled="isSaving || currentBudget > 100 || squadSlots.filter(s => s.card !== null).length === 0" class="px-10 py-4 bg-emerald-600 text-black font-black text-[10px] uppercase tracking-[0.2em] transition-colors hover:bg-emerald-500 clip-esports-small disabled:opacity-30 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:cursor-not-allowed flex items-center gap-3">
-        <span class="material-symbols-rounded text-sm" :class="{'animate-spin': isSaving}">{{ isSaving ? 'sync' : 'gavel' }}</span>
-        {{ isSaving ? 'Sincronizando...' : 'Autorizar Deploy' }}
-      </button>
-    </div>
-
-    <div class="mb-10 bg-[#0a0a0c] border-l-4 border-y border-r border-zinc-900 p-6 flex flex-col md:flex-row justify-between items-center gap-8 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]" :class="currentBudget > 100 ? 'border-l-rose-600' : (currentBudget >= 85 ? 'border-l-yellow-500' : 'border-l-emerald-600')">
-      <div class="flex flex-col w-full md:w-1/3">
-        <span class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-2">Orçamento Salarial</span>
-        <div class="flex items-baseline gap-3">
-          <span class="text-5xl font-mono font-black leading-none" :class="budgetColorClass">{{ currentBudget }}</span>
-          <span class="text-sm font-bold text-zinc-700 uppercase tracking-widest">/ 100 Pts</span>
-        </div>
-      </div>
-      <div class="w-full md:w-2/3 h-2 bg-[#050505] border border-zinc-800 overflow-hidden clip-esports-small">
-        <div class="h-full transition-all duration-500 ease-out" :class="budgetBarColorClass" :style="`width: ${Math.min((currentBudget / 100) * 100, 100)}%`"></div>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 mb-16">
-      <div v-for="(slot, index) in squadSlots" :key="index" class="w-full max-w-[190px] mx-auto flex flex-col relative group transform-gpu">
-        
-        <div class="aspect-[2/3] w-full relative mb-3">
-          <div v-if="!slot.card" class="absolute inset-0 border-2 border-dashed border-zinc-800 bg-[#0a0a0c] flex flex-col items-center justify-center hover:border-zinc-500 transition-colors cursor-pointer clip-esports" @click="removeFromSquad(index)">
-            <div class="w-10 h-10 border border-zinc-700 flex items-center justify-center mb-3 bg-[#050505] rotate-45">
-              <span class="material-symbols-rounded text-zinc-600 -rotate-45">add</span>
-            </div>
-            <span class="text-[9px] font-black text-zinc-600 tracking-[0.2em] uppercase">Slot 0{{ index + 1 }}</span>
-          </div>
-          
-          <div v-else class="absolute inset-0 cursor-pointer">
-            <FantasyCard :card="slot.card" :force-reveal="true" :is-interactive="false" @cardClick="removeFromSquad(index)" />
-            
-            <div class="absolute top-2 left-2 bg-[#050505] border border-zinc-800 px-2 py-1 z-50 flex items-center gap-1 clip-esports-small">
-               <span class="material-symbols-rounded text-[10px] text-emerald-500">toll</span>
-               <span class="text-[10px] font-mono font-black text-white">{{ slot.card.deployment_cost }}</span>
-            </div>
-            <div class="absolute bottom-2 right-2 bg-[#050505] border border-zinc-800 px-2 py-1 z-50 flex items-center gap-1 clip-esports-small" :class="slot.card.contract_points <= 1 ? 'text-rose-500 border-rose-900' : 'text-zinc-400'">
-               <span class="material-symbols-rounded text-[10px]">contract</span>
-               <span class="text-[10px] font-mono font-black">{{ slot.card.contract_points }}</span>
-            </div>
-            
-            <div class="absolute inset-0 bg-[#050505]/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-40 clip-esports border border-rose-900" @click="removeFromSquad(index)">
-               <div class="w-12 h-12 bg-rose-950 border border-rose-800 flex items-center justify-center mb-2 rotate-45">
-                 <span class="material-symbols-rounded text-2xl text-rose-500 -rotate-45">close</span>
-               </div>
-               <span class="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em]">Dispensar</span>
-            </div>
-          </div>
-        </div>
-
-        <select v-model="slot.role" :disabled="!slot.card" class="appearance-none w-full bg-[#0a0a0c] border border-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-[0.15em] py-3 text-center focus:outline-none focus:border-emerald-600 disabled:opacity-30 cursor-pointer transition-colors clip-esports-small">
-          <option value="entry" class="bg-[#050505] text-white">Entry Fragger</option>
-          <option value="support" class="bg-[#050505] text-white">Suporte</option>
-          <option value="awper" class="bg-[#050505] text-white">AWPer</option>
-          <option value="igl" class="bg-[#050505] text-white">Líder (IGL)</option>
-          <option value="lurker" class="bg-[#050505] text-white">Lurker</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="flex-1 bg-[#0a0a0c] border-t border-zinc-900 pt-8">
-      <div class="flex items-center gap-4 mb-8 px-4">
-        <span class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] bg-[#050505] px-4 py-2 border border-zinc-800 clip-esports-small">Reserva Tática</span>
-        <div class="flex-1 h-[1px] bg-zinc-900"></div>
-      </div>
+    <div class="flex flex-col lg:flex-row gap-8">
       
-      <div v-if="availableCards.length === 0" class="flex flex-col items-center justify-center h-[20vh] opacity-30">
-        <span class="material-symbols-rounded text-5xl mb-4 text-zinc-600">group_off</span>
-        <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nenhum operador disponível</span>
-      </div>
-
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-5 px-4 pb-4">
-        <div v-for="card in availableCards" :key="card.id" class="w-full aspect-[2/3] relative cursor-pointer transition-transform duration-300 transform-gpu" :class="card.contract_points === 0 ? 'opacity-40 grayscale cursor-not-allowed scale-95' : 'hover:-translate-y-2'" @click="card.contract_points > 0 ? addToSquad(card) : null">
-          <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" @cardClick="card.contract_points > 0 ? addToSquad(card) : null" />
-          
-          <div class="absolute top-2 left-2 bg-[#050505] border border-zinc-800 px-2 py-1 z-50 flex items-center gap-1 pointer-events-none clip-esports-small">
-             <span class="material-symbols-rounded text-[10px] text-emerald-500">toll</span>
-             <span class="text-[10px] font-mono font-black text-white">{{ card.deployment_cost }}</span>
+      <div class="w-full lg:w-3/4 grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div v-for="slot in 5" :key="slot" class="flex flex-col gap-4">
+          <div class="text-center">
+            <span class="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Posição 0{{ slot }}</span>
           </div>
           
-          <div v-if="card.contract_points === 0" class="absolute inset-0 bg-[#050505]/80 flex items-center justify-center z-40 pointer-events-none clip-esports border border-zinc-800">
-             <div class="flex flex-col items-center">
-               <span class="material-symbols-rounded text-zinc-500 text-3xl mb-2">lock</span>
-               <span class="text-[8px] text-zinc-500 font-black tracking-[0.2em] uppercase bg-black px-3 py-1 border border-zinc-800 clip-esports-small">Inativo</span>
-             </div>
+          <div v-if="squadCards[slot - 1]" class="relative group cursor-pointer" @click="promptRemove(squadCards[slot - 1])">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-50 bg-emerald-950/80 border border-emerald-900 text-emerald-400 text-[8px] font-black uppercase tracking-widest px-3 py-1 clip-esports-small whitespace-nowrap shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+              {{ squadCards[slot - 1].squad_role }}
+            </div>
+            <div class="absolute inset-0 bg-rose-600/20 backdrop-blur-sm z-40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+               <span class="material-symbols-rounded text-rose-500 text-4xl">person_remove</span>
+            </div>
+            <div class="aspect-[2/3] w-full relative z-10 transform-gpu transition-transform duration-300 group-hover:scale-95">
+              <FantasyCard :card="squadCards[slot - 1]" :force-reveal="true" :is-interactive="false" />
+            </div>
+          </div>
+          
+          <div v-else @click="openSelection(slot)" class="aspect-[2/3] w-full border-2 border-dashed border-zinc-800 bg-[#0a0a0c] hover:bg-zinc-900/50 hover:border-emerald-900/50 transition-colors flex flex-col items-center justify-center cursor-pointer group clip-esports">
+            <span class="material-symbols-rounded text-zinc-700 group-hover:text-emerald-500 text-3xl mb-2 transition-colors">add</span>
+            <span class="text-[8px] font-black text-zinc-600 group-hover:text-emerald-600 uppercase tracking-widest">Alocar Operador</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full lg:w-1/4 bg-[#0a0a0c] border border-zinc-900 p-6 clip-esports shadow-2xl flex flex-col gap-6 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(16,185,129,0.02)_4px,rgba(16,185,129,0.02)_8px)] pointer-events-none"></div>
+        
+        <div>
+          <h3 class="text-xs font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">Relatório de Análise</h3>
+          
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] font-mono text-zinc-500 uppercase">Poder Base (RAW)</span>
+            <span class="text-sm font-black text-white">{{ basePower }}</span>
+          </div>
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-[10px] font-mono text-zinc-500 uppercase">Multiplicador Sinergia</span>
+            <span class="text-sm font-black" :class="synergyMultiplier >= 1 ? 'text-emerald-400' : 'text-rose-400'">{{ (synergyMultiplier * 100).toFixed(0) }}%</span>
+          </div>
+          
+          <div class="pt-4 border-t border-zinc-800">
+            <span class="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] block mb-1">Força de Combate Efetiva</span>
+            <span class="text-4xl font-mono font-black text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">{{ totalCombatPower }}</span>
+          </div>
+        </div>
+
+        <div class="flex-1 bg-[#050505] border border-zinc-900 p-4 mt-4">
+          <h4 class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-3">Logs de Sinergia Ativos</h4>
+          <ul class="flex flex-col gap-2">
+            <li v-if="synergies.perfectComp" class="text-[10px] font-mono text-emerald-400 flex items-center gap-2">
+              <span class="material-symbols-rounded text-xs">check_circle</span> Perfect Comp (+25%)
+            </li>
+            <li v-if="synergies.legendaryLeader" class="text-[10px] font-mono text-amber-400 flex items-center gap-2">
+              <span class="material-symbols-rounded text-xs">stars</span> Liderança Elite (+10%)
+            </li>
+            <li v-if="synergies.overlappingRoles" class="text-[10px] font-mono text-rose-500 flex items-center gap-2">
+              <span class="material-symbols-rounded text-xs">warning</span> Conflito Tático (-15%)
+            </li>
+            <li v-if="!synergies.perfectComp && !synergies.legendaryLeader && !synergies.overlappingRoles" class="text-[10px] font-mono text-zinc-600 italic">
+              A aguardar implantação de operadores...
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
+      <div class="bg-[#0a0a0c] border border-zinc-800 w-full max-w-4xl p-8 clip-esports shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-6 border-b border-zinc-900 pb-4">
+          <h2 class="text-xl font-black text-white uppercase tracking-widest italic">Alocar Operador - Slot 0{{ selectedSlot }}</h2>
+          <button @click="showModal = false" class="text-zinc-500 hover:text-rose-500 transition-colors">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+
+        <div class="flex gap-4 mb-6">
+          <button v-for="r in availableRoles" :key="r" @click="tempRole = r" class="flex-1 py-3 border text-[10px] font-black uppercase tracking-widest transition-all clip-esports-small" :class="tempRole === r ? 'bg-emerald-950/40 text-emerald-500 border-emerald-900/50' : 'bg-[#050505] text-zinc-500 border-zinc-800 hover:border-zinc-600'">
+            {{ r }}
+          </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 pr-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div v-for="card in availableCards" :key="card.id" @click="executeDeploy(card)" class="cursor-pointer group relative">
+            <div class="absolute inset-0 border-2 border-transparent group-hover:border-emerald-500 z-50 transition-colors clip-esports pointer-events-none"></div>
+            <div class="aspect-[2/3] w-full transform-gpu transition-transform duration-200 group-hover:scale-95">
+              <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" />
+            </div>
+          </div>
+          <div v-if="availableCards.length === 0" class="col-span-full py-12 text-center">
+            <span class="text-xs font-mono text-zinc-600 uppercase">Nenhum operador disponível no arsenal.</span>
           </div>
         </div>
       </div>
@@ -113,110 +121,128 @@ import FantasyCard from '../components/FantasyCard.vue'
 const store = useFantasyStore()
 const toastStore = useToastStore()
 
-const squadSlots = ref([
-  { card: null, role: 'entry' },
-  { card: null, role: 'support' },
-  { card: null, role: 'awper' },
-  { card: null, role: 'igl' },
-  { card: null, role: 'lurker' }
-])
-const isSaving = ref(false)
+const showModal = ref(false)
+const selectedSlot = ref(null)
+const tempRole = ref('Assault')
+const availableRoles = ['Sniper', 'Assault', 'Support', 'IGL', 'Lurker']
+const isProcessing = ref(false)
 
-const currentBudget = computed(() => {
-  return squadSlots.value.reduce((total, slot) => {
-    return total + (slot.card ? slot.card.deployment_cost : 0)
-  }, 0)
-})
+const powerMap = { "COMMON": 10, "RARE": 25, "EPIC": 60, "LEGENDARY": 120, "MYTHIC": 250 }
 
-const budgetColorClass = computed(() => {
-  if (currentBudget.value > 100) return 'text-rose-600 drop-shadow-[0_0_10px_rgba(225,29,72,0.8)] animate-pulse'
-  if (currentBudget.value >= 85) return 'text-yellow-500'
-  return 'text-white'
-})
-
-const budgetBarColorClass = computed(() => {
-  if (currentBudget.value > 100) return 'bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,1)]'
-  if (currentBudget.value >= 85) return 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,1)]'
-  return 'bg-emerald-600 shadow-[0_0_10px_rgba(5,150,105,1)]'
+const squadCards = computed(() => {
+  const arr = [null, null, null, null, null]
+  store.cards.forEach(c => {
+    if (c.squad_position >= 1 && c.squad_position <= 5) {
+      arr[c.squad_position - 1] = c
+    }
+  })
+  return arr
 })
 
 const availableCards = computed(() => {
-  const slottedIds = squadSlots.value.filter(s => s.card !== null).map(s => s.card.id)
-  return store.cards.filter(c => !slottedIds.includes(c.id))
+  return store.cards.filter(c => {
+    const inSquad = c.squad_position !== null
+    const inContract = c.contract_end_date && new Date(c.contract_end_date) > new Date()
+    return !inSquad && !inContract
+  })
 })
 
-const loadSavedSquad = () => {
-  const saved = store.cards.filter(c => c.squad_position !== null).sort((a, b) => a.squad_position - b.squad_position)
-  saved.forEach(card => {
-    if (card.squad_position >= 1 && card.squad_position <= 5) {
-      squadSlots.value[card.squad_position - 1].card = card
-      if (card.squad_role) {
-        squadSlots.value[card.squad_position - 1].role = card.squad_role
-      }
-    }
+const basePower = computed(() => {
+  let power = 0
+  squadCards.value.forEach(c => {
+    if (c) power += (powerMap[c.rarity] || 0)
   })
-}
+  return power
+})
 
-const addToSquad = (card) => {
-  if (card.contract_points === 0) return
+const synergies = computed(() => {
+  const active = squadCards.value.filter(c => c !== null)
+  const roles = active.map(c => c.squad_role)
+  const uniqueRoles = new Set(roles)
   
-  const isAlreadyInSquad = squadSlots.value.some(slot => slot.card && slot.card.id === card.id)
-  if (isAlreadyInSquad) {
-    toastStore.showToast('Operação Negada', 'Este operador já está posicionado no esquadrão.', 'error')
-    return
-  }
-
-  const emptyIndex = squadSlots.value.findIndex(slot => slot.card === null)
-  if (emptyIndex !== -1) {
-    squadSlots.value[emptyIndex].card = card
-  } else {
-    toastStore.showToast('Roster Lotado', 'Remova um operador antes de prosseguir.', 'warning')
-  }
-}
-
-const removeFromSquad = (index) => {
-  if (squadSlots.value[index].card) {
-    squadSlots.value[index].card = null
-  }
-}
-
-const saveSquad = async () => {
-  const payloadSquad = squadSlots.value
-    .filter(s => s.card !== null)
-    .map(s => ({ card_id: s.card.id, role: s.role }))
-    
-  if (payloadSquad.length === 0) return
+  const roleCounts = {}
+  roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1 })
   
-  isSaving.value = true
+  const igl = active.find(c => c.squad_role === 'IGL')
+
+  return {
+    perfectComp: active.length === 5 && uniqueRoles.size === 5,
+    overlappingRoles: Object.values(roleCounts).some(count => count >= 3),
+    legendaryLeader: igl && (igl.rarity === 'LEGENDARY' || igl.rarity === 'MYTHIC')
+  }
+})
+
+const synergyMultiplier = computed(() => {
+  let multi = 1.0
+  if (synergies.value.perfectComp) multi += 0.25
+  if (synergies.value.overlappingRoles) multi -= 0.15
+  if (synergies.value.legendaryLeader) multi += 0.10
+  return multi
+})
+
+const totalCombatPower = computed(() => {
+  return Math.floor(basePower.value * synergyMultiplier.value)
+})
+
+const openSelection = (slot) => {
+  selectedSlot.value = slot
+  tempRole.value = 'Assault'
+  showModal.value = true
+}
+
+const executeDeploy = async (card) => {
+  if (isProcessing.value) return
+  isProcessing.value = true
+  
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
-    const res = await fetch(`${baseUrl}/api/cards/user/me/squad`, {
+    
+    const res = await fetch(`${baseUrl}/api/squad/deploy/${card.id}`, {
       method: 'POST',
       headers: store.getHeaders(),
-      body: JSON.stringify({ squad: payloadSquad })
+      body: JSON.stringify({ position: selectedSlot.value, role: tempRole.value })
     })
     
     if (res.ok) {
-      toastStore.showToast('Deploy Finalizado', 'Esquadrão sincronizado com os servidores.', 'success')
+      toastStore.showToast('Deployment Confirmado', 'Operador alocado com sucesso.', 'success')
+      showModal.value = false
       await store.fetchCards()
-      loadSavedSquad()
     } else {
-      toastStore.showToast('Deploy Abortado', 'Verifique os fundos salariais.', 'error')
+      toastStore.showToast('Erro Tático', 'Falha ao posicionar operador.', 'error')
     }
   } catch (error) {
+    toastStore.showToast('Erro Crítico', 'Comunicações offline.', 'error')
   } finally {
-    isSaving.value = false
+    isProcessing.value = false
   }
 }
 
-onMounted(async () => {
-  await store.fetchCards()
-  loadSavedSquad()
+const promptRemove = async (card) => {
+  if (isProcessing.value) return
+  isProcessing.value = true
+  
+  try {
+    const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const baseUrl = rawUrl.replace(/\/$/, '')
+    
+    const res = await fetch(`${baseUrl}/api/squad/remove/${card.id}`, {
+      method: 'POST',
+      headers: store.getHeaders()
+    })
+    
+    if (res.ok) {
+      toastStore.showToast('Extração Confirmada', 'Operador retirado do esquadrão.', 'success')
+      await store.fetchCards()
+    }
+  } catch (error) {
+    toastStore.showToast('Erro Crítico', 'Falha na extração.', 'error')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+onMounted(() => {
+  store.fetchCards()
 })
 </script>
-
-<style scoped>
-.clip-esports { clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
-.clip-esports-small { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-</style>
