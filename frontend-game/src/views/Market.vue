@@ -95,24 +95,26 @@
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
         <div v-for="listing in p2pListings" :key="listing.id" class="w-full mx-auto flex flex-col group relative">
           
-          <div class="aspect-[2/3] w-full mb-2 transform-gpu transition-transform duration-300 group-hover:-translate-y-2 relative z-10">
-            <FantasyCard :card="listing.card" :force-reveal="true" :is-interactive="false" />
-          </div>
-          
-          <button v-if="myCardIds.includes(listing.card.id) || listing.seller_id === store.profile?.id || listing.seller_id === store.user?.id" disabled class="w-full py-3 bg-[#050505] border-t border-zinc-800 text-zinc-600 text-[8px] font-black uppercase tracking-[0.3em] cursor-not-allowed clip-esports-small z-20">
-            Ordem Própria
-          </button>
-          
-          <div v-else-if="listing.is_auction" class="flex flex-col gap-1 w-full z-20">
-            <input v-model="bidInputs[listing.id]" type="number" placeholder="Seu Lance C$" class="w-full py-2 bg-[#050505] border border-zinc-800 text-center text-white font-mono text-xs focus:outline-none focus:border-amber-500 clip-esports-small">
-            <button @click="placeBid(listing.id)" :disabled="isBuying || !bidInputs[listing.id]" class="w-full py-2.5 bg-amber-600 text-black text-[9px] font-black uppercase tracking-[0.3em] hover:bg-amber-500 transition-colors clip-esports-small disabled:opacity-30">
-              Licitar
+          <template v-if="listing.card">
+            <div class="aspect-[2/3] w-full mb-2 transform-gpu transition-transform duration-300 group-hover:-translate-y-2 relative z-10">
+              <FantasyCard :card="listing.card" :force-reveal="true" :is-interactive="false" />
+            </div>
+            
+            <button v-if="myCardIds.includes(listing.card.id) || listing.seller_id === store.profile?.id || listing.seller_id === store.user?.id" disabled class="w-full py-3 bg-[#050505] border-t border-zinc-800 text-zinc-600 text-[8px] font-black uppercase tracking-[0.3em] cursor-not-allowed clip-esports-small z-20">
+              Ordem Própria
             </button>
-          </div>
+            
+            <div v-else-if="listing.is_auction" class="flex flex-col gap-1 w-full z-20">
+              <input v-model="bidInputs[listing.id]" type="number" placeholder="Seu Lance C$" class="w-full py-2 bg-[#050505] border border-zinc-800 text-center text-white font-mono text-xs focus:outline-none focus:border-amber-500 clip-esports-small">
+              <button @click="placeBid(listing.id)" :disabled="isBuying || !bidInputs[listing.id]" class="w-full py-2.5 bg-amber-600 text-black text-[9px] font-black uppercase tracking-[0.3em] hover:bg-amber-500 transition-colors clip-esports-small disabled:opacity-30">
+                Licitar
+              </button>
+            </div>
 
-          <button v-else @click="buyP2PCard(listing.id)" :disabled="isBuying" class="w-full py-3 bg-[#050505] border-t-2 border-emerald-600 text-emerald-500 text-[9px] font-black uppercase tracking-[0.3em] hover:bg-emerald-600 hover:text-black transition-colors flex items-center justify-center gap-1.5 clip-esports-small z-20 disabled:opacity-30 shadow-[0_-5px_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]">
-            <span class="material-symbols-rounded text-[11px]">shopping_cart</span> {{ listing.price.toLocaleString() }}
-          </button>
+            <button v-else @click="buyP2PCard(listing.id)" :disabled="isBuying" class="w-full py-3 bg-[#050505] border-t-2 border-emerald-600 text-emerald-500 text-[9px] font-black uppercase tracking-[0.3em] hover:bg-emerald-600 hover:text-black transition-colors flex items-center justify-center gap-1.5 clip-esports-small z-20 disabled:opacity-30 shadow-[0_-5px_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+              <span class="material-symbols-rounded text-[11px]">shopping_cart</span> {{ listing.price.toLocaleString() }}
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -188,6 +190,7 @@ const mergedStorePacks = computed(() => {
 })
 
 const fetchStoreData = async () => {
+  if (isFetchingStore.value) return
   isFetchingStore.value = true
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -213,12 +216,16 @@ const checkDarkWebStatus = async () => {
 
 const fetchP2PListings = async () => {
   activeTab.value = 'P2P'
+  if (isFetchingP2P.value) return
   isFetchingP2P.value = true
   try {
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const baseUrl = rawUrl.replace(/\/$/, '')
     const res = await fetch(`${baseUrl}/api/market/p2p`, { headers: store.getHeaders() })
-    if (res.ok) p2pListings.value = await res.json()
+    if (res.ok) {
+      const rawData = await res.json()
+      p2pListings.value = rawData.filter(item => item.card != null)
+    }
   } catch (error) {
     toastStore.showToast('Erro', 'Falha ao aceder à rede P2P.', 'error')
   } finally { isFetchingP2P.value = false }
@@ -238,15 +245,12 @@ const buyPack = async (packType, price) => {
     
     if (res.ok) {
       toastStore.showToast('Ordem Executada', `Suprimentos adquiridos.`, 'success')
-      if(store.fetchProfile) await store.fetchProfile().catch(()=>{})
-      if(store.fetchUser) await store.fetchUser().catch(()=>{})
+      if (store.profile) store.profile.wallet_balance -= price
       await store.fetchPacks()
-      await fetchStoreData() 
     } else {
-      const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Transação Negada', errData.detail || 'Fundos insuficientes.', 'error')
-      await fetchStoreData() 
+      toastStore.showToast('Transação Negada', 'Fundos insuficientes ou preço alterado.', 'error')
     }
+    await fetchStoreData() 
   } catch (error) {
     toastStore.showToast('Erro Crítico', 'Servidor de transações offline.', 'error')
   } finally { isBuying.value = false }
@@ -262,16 +266,14 @@ const buyDarkWebPack = async () => {
     
     if (res.ok) {
       toastStore.showToast('Aquisição Ilegal', `Carga Classificada entregue.`, 'success')
-      if(store.fetchProfile) await store.fetchProfile().catch(()=>{})
-      if(store.fetchUser) await store.fetchUser().catch(()=>{})
+      if (store.profile) store.profile.wallet_balance -= darkWebPrice.value
       await store.fetchPacks()
       activeTab.value = 'STORE'
     } else {
-      const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Transação Bloqueada', errData.detail || 'Fundos insuficientes.', 'error')
+      toastStore.showToast('Transação Bloqueada', 'Fundos insuficientes.', 'error')
     }
   } catch (error) {
-    toastStore.showToast('Erro Crítico', 'Conexão com a rede secreta perdida.', 'error')
+    toastStore.showToast('Erro Crítico', 'Conexão perdida.', 'error')
   } finally { isBuying.value = false }
 }
 
@@ -286,11 +288,10 @@ const buyP2PCard = async (listingId) => {
       toastStore.showToast('Transferência P2P', 'Ativo adquirido e transferido para o Arsenal.', 'success')
       await fetchP2PListings()
       await store.fetchCards()
-      if(store.fetchProfile) await store.fetchProfile().catch(()=>{})
-      if(store.fetchUser) await store.fetchUser().catch(()=>{})
+      const data = await res.json()
+      if (store.profile && data.new_balance) store.profile.wallet_balance = data.new_balance
     } else {
-      const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Ordem Rejeitada', errData.detail || 'Ação não permitida.', 'error')
+      toastStore.showToast('Ordem Rejeitada', 'Ação não permitida ou fundos insuficientes.', 'error')
     }
   } catch (error) {
     toastStore.showToast('Erro Crítico', 'Servidor offline.', 'error')
@@ -313,11 +314,10 @@ const placeBid = async (listingId) => {
       toastStore.showToast('Licitação Aceite', 'Lideras o leilão por este ativo.', 'success')
       bidInputs[listingId] = ''
       await fetchP2PListings()
-      if(store.fetchProfile) await store.fetchProfile().catch(()=>{})
-      if(store.fetchUser) await store.fetchUser().catch(()=>{})
+      const data = await res.json()
+      if (store.profile && data.new_balance) store.profile.wallet_balance = data.new_balance
     } else {
-      const errData = await res.json().catch(() => ({}))
-      toastStore.showToast('Licitação Recusada', errData.detail || 'O valor deve ser superior.', 'error')
+      toastStore.showToast('Licitação Recusada', 'O valor deve ser superior.', 'error')
     }
   } catch (error) {
     toastStore.showToast('Erro Crítico', 'Servidor de leilões offline.', 'error')

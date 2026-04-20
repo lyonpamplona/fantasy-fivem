@@ -83,31 +83,64 @@
       </div>
     </div>
     
-    <div v-if="!store.cards.length" class="flex-1 flex flex-col items-center justify-center opacity-30 px-4 text-center mt-10">
-      <span class="material-symbols-rounded text-6xl mb-4 text-zinc-600">inventory_2</span>
-      <h2 class="text-xs font-black text-zinc-400 uppercase tracking-[0.4em]">Arsenal Vazio</h2>
-    </div>
-
-    <div v-else class="flex flex-col flex-1 w-full min-h-0">
-      <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide border-b border-zinc-900/50 w-full shrink-0">
-        <button v-for="tab in filterTabs" :key="tab.id" @click="activeFilter = tab.id" class="shrink-0 px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap" :class="activeFilter === tab.id ? `text-${tab.color}-400` : 'text-zinc-600 hover:text-zinc-400'">
-          {{ tab.label }} ({{ rarityCounts[tab.id] || 0 }})
-          <div v-if="activeFilter === tab.id" class="absolute bottom-0 left-0 w-full h-0.5" :class="`bg-${tab.color}-500 shadow-[0_0_10px_currentColor]`"></div>
-        </button>
+    <div class="flex flex-col flex-1 w-full min-h-0">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="material-symbols-rounded text-emerald-500 text-xl">folder_special</span>
+        <h2 class="text-sm font-black text-white uppercase tracking-[0.3em]">Fichários de Operadores</h2>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 px-1 sm:px-2 pb-12 w-full overflow-y-auto">
-        <div v-for="card in filteredCards" :key="card.id" class="w-full mx-auto relative group shrink-0" @click="handleCardClick(card)">
-          
-          <div v-if="isForgeMode && selectedForForge.includes(card.id)" class="absolute -inset-2 border-2 border-amber-500 z-50 pointer-events-none clip-esports animate-pulse shadow-[inset_0_0_20px_rgba(217,119,6,0.5)]"></div>
-
-          <div v-if="isContractActive(card)" class="absolute -top-3 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 clip-esports-small shadow-[0_0_15px_rgba(79,70,229,0.5)] whitespace-nowrap">
-            Operação
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 w-full">
+        <div v-for="rarity in rarityCategories" :key="rarity.id" @click="openRarityFolder(rarity.id)" class="aspect-[4/5] w-full border-2 border-dashed bg-[#0a0a0c] hover:bg-zinc-900/80 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group clip-esports relative" :class="rarity.borderClass">
+          <div class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black bg-[#050505] border border-zinc-800" :class="rarity.textClass">
+            {{ rarityCounts[rarity.id] || 0 }}
           </div>
+          <span class="material-symbols-rounded text-5xl mb-4 transition-transform duration-300 group-hover:scale-110" :class="rarity.textClass">
+            {{ rarity.icon }}
+          </span>
+          <h3 class="text-sm md:text-lg font-black uppercase tracking-widest" :class="rarity.textClass">{{ rarity.label }}</h3>
+          <span class="text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-2 px-3 py-1 bg-zinc-950 border border-zinc-900">
+            Acessar Classe
+          </span>
+        </div>
+      </div>
+    </div>
 
-          <div class="aspect-[2/3] w-full transform-gpu transition-all duration-300 relative z-10" :class="{'scale-95 opacity-50': isForgeMode && !selectedForForge.includes(card.id) && selectedForForge.length > 0, 'cursor-pointer lg:group-hover:-translate-y-2': !isContractActive(card)}">
-            <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" />
+    <div v-if="showRarityModal" class="fixed inset-0 z-[50] flex items-center justify-center bg-black/95 p-4 md:p-8 backdrop-blur-md">
+      <div class="bg-[#0a0a0c] border w-full max-w-7xl p-6 md:p-8 clip-esports shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col h-[90vh] relative overflow-hidden" :class="currentRarityObj.borderClass">
+        <div class="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(255,255,255,0.01)_4px,rgba(255,255,255,0.01)_8px)] pointer-events-none"></div>
+        
+        <div class="flex justify-between items-start md:items-center mb-6 border-b border-zinc-900 pb-4 shrink-0 relative z-10">
+          <div>
+             <h2 class="text-2xl md:text-4xl font-black uppercase tracking-widest italic drop-shadow-md" :class="currentRarityObj.textClass">
+               Classe {{ currentRarityObj.label }}
+             </h2>
+             <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{{ filteredCards.length }} Operadores Encontrados</span>
           </div>
+          <button @click="showRarityModal = false" class="w-12 h-12 bg-[#050505] border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-rose-600 transition-colors clip-esports-small">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 pr-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 pb-12 w-full relative z-10 scrollbar-hide">
+          <div v-for="card in paginatedCards" :key="card.id" class="w-full relative group shrink-0" @click="handleCardClick(card)">
+            <div v-if="isForgeMode && selectedForForge.includes(card.id)" class="absolute -inset-2 border-2 border-amber-500 z-50 pointer-events-none clip-esports animate-pulse shadow-[inset_0_0_20px_rgba(217,119,6,0.5)]"></div>
+            <div v-if="isContractActive(card)" class="absolute -top-3 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 clip-esports-small shadow-[0_0_15px_rgba(79,70,229,0.5)] whitespace-nowrap">
+              Operação
+            </div>
+            <div class="aspect-[2/3] w-full transform-gpu transition-all duration-300 relative z-10" :class="{'scale-95 opacity-50': isForgeMode && !selectedForForge.includes(card.id) && selectedForForge.length > 0, 'cursor-pointer lg:group-hover:-translate-y-2': !isContractActive(card)}">
+              <FantasyCard :card="card" :force-reveal="true" :is-interactive="false" />
+            </div>
+          </div>
+          <div v-if="filteredCards.length === 0" class="col-span-full py-20 flex flex-col items-center justify-center opacity-40 text-center w-full">
+            <span class="material-symbols-rounded text-6xl mb-4 text-zinc-600">search_off</span>
+            <span class="text-xs font-mono uppercase tracking-widest">Nenhum ativo nesta classificação</span>
+          </div>
+        </div>
+
+        <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 mt-4 pt-6 border-t border-zinc-900 shrink-0 relative z-10">
+          <button @click="currentPage--" :disabled="currentPage === 1" class="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white disabled:opacity-30 clip-esports-small transition-colors"><span class="material-symbols-rounded text-lg">chevron_left</span></button>
+          <span class="text-[10px] font-mono font-black text-zinc-500 uppercase tracking-widest">Página {{ currentPage }} de {{ totalPages }}</span>
+          <button @click="currentPage++" :disabled="currentPage === totalPages" class="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white disabled:opacity-30 clip-esports-small transition-colors"><span class="material-symbols-rounded text-lg">chevron_right</span></button>
         </div>
       </div>
     </div>
@@ -121,27 +154,37 @@
         <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1)_0%,transparent_60%)] pointer-events-none"></div>
         
         <div v-if="!showDecryptionSuccess" class="relative flex flex-col items-center animate-pulse text-center w-full my-auto">
-          <div class="w-32 h-32 border-2 flex items-center justify-center rotate-45 mb-12 shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-500/50 animate-[ping_1s_infinite]' : (revealType === 'FORGE' ? 'border-amber-500/50' : 'border-emerald-500/50')">
+          <div class="w-32 h-32 border-2 flex items-center justify-center rotate-45 mb-12 shadow-2xl shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-500/50 shadow-rose-600/30 animate-[ping_1s_infinite]' : (revealType === 'FORGE' ? 'border-amber-500/50' : 'border-emerald-500/50')">
             <div class="w-24 h-24 border flex items-center justify-center -rotate-45 shrink-0" :class="revealType === 'CLASSIFIED' ? 'border-rose-400/30' : (revealType === 'FORGE' ? 'border-amber-400/30' : 'border-emerald-400/30')">
               <span class="material-symbols-rounded text-6xl" :class="revealType === 'CLASSIFIED' ? 'text-rose-500' : (revealType === 'FORGE' ? 'text-amber-500' : 'text-emerald-500')">
                 {{ revealType === 'CLASSIFIED' ? 'terminal' : (revealType === 'FORGE' ? 'local_fire_department' : 'lock_open') }}
               </span>
             </div>
           </div>
-          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.4em] mb-2">Processando</h2>
+          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.4em] mb-2" :class="revealType === 'CLASSIFIED' ? 'drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]' : (revealType === 'FORGE' ? 'drop-shadow-[0_0_10px_rgba(217,119,6,0.8)]' : 'drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]')">
+            {{ revealType === 'CLASSIFIED' ? 'BYPASSING FIREWALL...' : (revealType === 'FORGE' ? 'Fusão Térmica' : 'Decodificando') }}
+          </h2>
+          <p class="text-xs font-mono tracking-widest" :class="revealType === 'CLASSIFIED' ? 'text-rose-500/70' : (revealType === 'FORGE' ? 'text-amber-500/70' : 'text-emerald-500/70')">
+            {{ revealType === 'CLASSIFIED' ? 'Acessando Node da Dark Web...' : (revealType === 'FORGE' ? 'A sintetizar nova estrutura molecular...' : 'A extrair dados dos operadores...') }}
+          </p>
+          
           <div class="w-64 h-1 bg-zinc-900 mt-8 overflow-hidden shrink-0">
             <div class="h-full w-1/2 animate-[slide_1s_ease-in-out_infinite]" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600' : (revealType === 'FORGE' ? 'bg-amber-500' : 'bg-emerald-500')"></div>
           </div>
         </div>
 
         <div v-else class="relative flex flex-col items-center transform-gpu animate-[zoomIn_0.5s_ease-out_forwards] w-full max-w-6xl mx-auto my-auto">
-          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.3em] drop-shadow-md mb-12 text-center">Concluído</h2>
+          <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.2em] md:tracking-[0.3em] drop-shadow-md mb-12 text-center">
+            {{ revealType === 'CLASSIFIED' ? 'ACESSO CONCEDIDO' : (revealType === 'FORGE' ? 'Operador Forjado' : 'Extração Concluída') }}
+          </h2>
+          
           <div class="flex flex-wrap justify-center gap-4 md:gap-6 w-full px-4">
-            <div v-for="(newCard, index) in revealedCards" :key="index" class="w-32 sm:w-40 md:w-48 aspect-[2/3] shrink-0 animate-[zoomIn_0.5s_ease-out_forwards]" :style="`animation-delay: ${index * 0.1}s`">
+            <div v-for="(newCard, index) in revealedCards" :key="index" class="w-32 sm:w-40 md:w-48 aspect-[2/3] shrink-0 transform-gpu transition-all lg:hover:scale-105 lg:hover:-translate-y-2 animate-[zoomIn_0.5s_ease-out_forwards]" :style="`animation-delay: ${index * 0.1}s`">
               <FantasyCard :card="newCard" :force-reveal="true" :is-interactive="false" />
             </div>
           </div>
-          <button @click="closeReveal" class="mt-16 shrink-0 px-12 py-4 text-black text-xs font-black uppercase tracking-widest clip-esports-small w-full sm:w-auto" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600 hover:bg-rose-500' : (revealType === 'FORGE' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500')">
+
+          <button @click="closeReveal" class="mt-16 shrink-0 px-12 py-4 text-black text-xs font-black uppercase tracking-widest transition-colors clip-esports-small w-full sm:w-auto" :class="revealType === 'CLASSIFIED' ? 'bg-rose-600 hover:bg-rose-500 shadow-[0_0_20px_rgba(225,29,72,0.3)]' : (revealType === 'FORGE' ? 'bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]')">
             Continuar
           </button>
         </div>
@@ -151,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useFantasyStore } from '../stores/fantasy'
 import { useToastStore } from '../stores/toast'
 import FantasyCard from '../components/FantasyCard.vue'
@@ -171,26 +214,47 @@ const revealType = ref(null)
 const showDecryptionSuccess = ref(false)
 const revealedCards = ref([])
 
-const activeFilter = ref('ALL')
-const filterTabs = [
-  { id: 'ALL', label: 'Todos', color: 'emerald' },
-  { id: 'COMMON', label: 'Comum', color: 'zinc' },
-  { id: 'RARE', label: 'Raro', color: 'blue' },
-  { id: 'EPIC', label: 'Épico', color: 'purple' },
-  { id: 'LEGENDARY', label: 'Lendário', color: 'emerald' },
-  { id: 'MYTHIC', label: 'Mítico', color: 'amber' }
+const showRarityModal = ref(false)
+const activeFilter = ref('COMMON')
+
+const rarityCategories = [
+  { id: 'COMMON', label: 'Comum', icon: 'shield', textClass: 'text-zinc-400', borderClass: 'border-zinc-800 hover:border-zinc-500' },
+  { id: 'RARE', label: 'Raro', icon: 'security', textClass: 'text-blue-500', borderClass: 'border-zinc-800 hover:border-blue-500' },
+  { id: 'EPIC', label: 'Épico', icon: 'military_tech', textClass: 'text-purple-500', borderClass: 'border-zinc-800 hover:border-purple-500' },
+  { id: 'LEGENDARY', label: 'Lendário', icon: 'stars', textClass: 'text-emerald-500', borderClass: 'border-zinc-800 hover:border-emerald-500' },
+  { id: 'MYTHIC', label: 'Mítico', icon: 'diamond', textClass: 'text-amber-500', borderClass: 'border-zinc-800 hover:border-amber-500' }
 ]
 
+const currentRarityObj = computed(() => rarityCategories.find(r => r.id === activeFilter.value) || rarityCategories[0])
+
 const rarityCounts = computed(() => {
-  const counts = { ALL: store.cards.length }
+  const counts = {}
   store.cards.forEach(c => { counts[c.rarity] = (counts[c.rarity] || 0) + 1 })
   return counts
 })
 
 const filteredCards = computed(() => {
-  if (activeFilter.value === 'ALL') return store.cards
   return store.cards.filter(c => c.rarity === activeFilter.value)
 })
+
+const currentPage = ref(1)
+const itemsPerPage = 20
+
+watch(activeFilter, () => { currentPage.value = 1 })
+
+const paginatedCards = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredCards.value.slice(start, end)
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredCards.value.length / itemsPerPage)))
+
+const openRarityFolder = (rarityId) => {
+  activeFilter.value = rarityId
+  currentPage.value = 1
+  showRarityModal.value = true
+}
 
 const forgeProbabilities = computed(() => {
   const weightMap = { "COMMON": 1, "RARE": 3, "EPIC": 10, "LEGENDARY": 30, "MYTHIC": 100 }
