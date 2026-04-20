@@ -4,8 +4,8 @@ from sqlalchemy.future import select
 from database import get_db
 from models import Player, PlayerPack, Card
 from routers.auth import get_current_user
-import random  # <-- AQUI ESTÁ A FERRAMENTA DE SORTEIO
-import uuid    # <-- AQUI ESTÁ O GERADOR DE IDs ÚNICOS
+import random
+import uuid
 
 router = APIRouter()
 
@@ -14,11 +14,17 @@ PACK_CONFIG = {
     "3": {"amount": 3},
     "5": {"amount": 5},
     "7": {"amount": 7},
-    "10": {"amount": 10}
+    "10": {"amount": 10},
+    "CLASSIFIED": {"amount": 1}
 }
 
-RARITY_WEIGHTS = {"COMMON": 60, "RARE": 25, "EPIC": 10, "LEGENDARY": 5}
-COST_MAP = {"COMMON": 5, "RARE": 10, "EPIC": 15, "LEGENDARY": 30}
+COST_MAP = {
+    "COMMON": 5, 
+    "RARE": 10, 
+    "EPIC": 15, 
+    "LEGENDARY": 30, 
+    "MYTHIC": 100
+}
 
 @router.get("/user/me")
 async def get_my_packs(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
@@ -28,26 +34,47 @@ async def get_my_packs(db: AsyncSession = Depends(get_db), current_player: Playe
 @router.post("/open/{pack_type}")
 async def open_pack(pack_type: str, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
     if pack_type not in PACK_CONFIG:
-        raise HTTPException(status_code=400)
+        raise HTTPException(status_code=400, detail="Módulo inválido.")
 
     pack_record = (await db.execute(
         select(PlayerPack).where(PlayerPack.owner_id == current_player.id, PlayerPack.pack_type == pack_type)
     )).scalars().first()
 
     if not pack_record or pack_record.amount < 1:
-        raise HTTPException(status_code=400)
+        raise HTTPException(status_code=400, detail="Módulo inexistente no inventário.")
 
-    # Deduz o pacote do inventário
     pack_record.amount -= 1
     if pack_record.amount == 0:
         await db.delete(pack_record)
 
     generated_cards = []
     amount = PACK_CONFIG[pack_type]["amount"]
+    is_classified = (pack_type == "CLASSIFIED")
 
-    # Gera as cartas aleatórias
     for _ in range(amount):
-        chosen_rarity = random.choices(list(RARITY_WEIGHTS.keys()), weights=list(RARITY_WEIGHTS.values()))[0]
+        if is_classified:
+            chance_mythic = 0.10
+            chance_legendary = 0.30
+            chance_epic = 0.40
+            chance_rare = 0.20
+        else:
+            chance_mythic = 0.001
+            chance_legendary = 0.015
+            chance_epic = 0.08
+            chance_rare = 0.254
+
+        roll = random.random()
+        if roll < chance_mythic:
+            chosen_rarity = "MYTHIC"
+        elif roll < chance_mythic + chance_legendary:
+            chosen_rarity = "LEGENDARY"
+        elif roll < chance_mythic + chance_legendary + chance_epic:
+            chosen_rarity = "EPIC"
+        elif roll < chance_mythic + chance_legendary + chance_epic + chance_rare:
+            chosen_rarity = "RARE"
+        else:
+            chosen_rarity = "COMMON"
+
         float_val = round(random.uniform(0.001, 1.000), 4)
         
         new_card = Card(

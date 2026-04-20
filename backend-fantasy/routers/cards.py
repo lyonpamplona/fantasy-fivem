@@ -27,6 +27,10 @@ async def get_my_cards(db: AsyncSession = Depends(get_db), current_player: Playe
     result = await db.execute(select(Card).where(Card.owner_id == current_player.id))
     return result.scalars().all()
 
+class ForgeRequest(BaseModel):
+    card_ids: List[int]
+    boost_coins: int = 0
+
 @router.post("/forge")
 async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
     if len(payload.card_ids) != 5:
@@ -36,27 +40,31 @@ async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db),
     cards_to_forge = result.scalars().all()
 
     if len(cards_to_forge) != 5:
-        raise HTTPException(status_code=400, detail="Operadores inválidos ou não pertencem ao seu arsenal.")
+        raise HTTPException(status_code=400, detail="Operadores inválidos.")
 
     for card in cards_to_forge:
         if getattr(card, 'contract_end_date', None) and card.contract_end_date > datetime.utcnow():
-            raise HTTPException(status_code=400, detail="Não pode forjar operadores em missão (Contrato).")
+            raise HTTPException(status_code=400, detail="Não pode forjar operadores em missão.")
         if getattr(card, 'squad_position', None) is not None:
-            raise HTTPException(status_code=400, detail="Remova os operadores do Esquadrão antes da Forja.")
+            raise HTTPException(status_code=400, detail="Remova os operadores do Esquadrão.")
 
-    # Calcula o "Peso" do sacrifício para melhorar levemente as chances (FOMO)
     weight_map = {"COMMON": 1, "RARE": 3, "EPIC": 10, "LEGENDARY": 30, "MYTHIC": 100}
-    total_weight = sum(weight_map.get(c.rarity, 1) for c in cards_to_forge)
+    base_weight = sum(weight_map.get(c.rarity, 1) for c in cards_to_forge)
+    
+    boost_weight = (payload.boost_coins // 1000) * 5
+    total_weight = base_weight + boost_weight
 
     base_forge_cost = 1000
-    if current_player.wallet_balance < base_forge_cost:
-        raise HTTPException(status_code=400, detail=f"A Forja requer {base_forge_cost} C$.")
-    current_player.wallet_balance -= base_forge_cost
+    total_cost = base_forge_cost + payload.boost_coins
 
-    # Lógica RNG - Drop Aleatório com peso dinâmico
-    chance_mythic = min(0.05, 0.005 + (total_weight * 0.0001))
-    chance_legendary = min(0.15, 0.02 + (total_weight * 0.0005))
-    chance_epic = min(0.30, 0.10 + (total_weight * 0.001))
+    if current_player.wallet_balance < total_cost:
+        raise HTTPException(status_code=400, detail=f"Saldo insuficiente. Custo total: {total_cost} C$.")
+    
+    current_player.wallet_balance -= total_cost
+
+    chance_mythic = min(0.15, 0.005 + (total_weight * 0.00015))
+    chance_legendary = min(0.30, 0.02 + (total_weight * 0.0006))
+    chance_epic = min(0.50, 0.10 + (total_weight * 0.0015))
     chance_rare = 0.35
     
     roll = random.random()
@@ -71,11 +79,9 @@ async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db),
     else:
         new_rarity = "COMMON"
 
-    # Apaga as cartas antigas
     for card in cards_to_forge:
         await db.delete(card)
 
-    # Cria a nova carta
     new_card = Card(
         owner_id=current_player.id,
         player_nickname=cards_to_forge[0].player_nickname,
