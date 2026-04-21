@@ -1,3 +1,5 @@
+"""Modelos ORM compartilhados entre dominios Fantasy e Heuristica."""
+
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -7,6 +9,8 @@ from database import Base
 # 1. CORE: JOGADORES (Partilhado por ambos)
 # ==========================================
 class Player(Base):
+    """Conta principal do jogador com dados economicos e de risco."""
+
     __tablename__ = "players"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -34,6 +38,8 @@ class Player(Base):
 # 2. ECOSSISTEMA FANTASY (Cartas, Mercado)
 # ==========================================
 class Card(Base):
+    """Carta colecionavel/operador com progresso e estado de uso."""
+
     __tablename__ = "cards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -60,6 +66,8 @@ class Card(Base):
     market_listing = relationship("MarketListing", back_populates="card", uselist=False)
 
 class PlayerPack(Base):
+    """Inventario de packs nao abertos por jogador."""
+
     __tablename__ = "player_packs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -70,6 +78,8 @@ class PlayerPack(Base):
     owner = relationship("Player", back_populates="packs")
 
 class MarketListing(Base):
+    """Anuncio de mercado P2P para venda ou leilao de cartas."""
+
     __tablename__ = "market_listings"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -89,6 +99,8 @@ class MarketListing(Base):
 
 
 class Squad(Base):
+    """Agrupamento tatico de jogador para composicao ativa."""
+
     __tablename__ = "squads"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -103,6 +115,8 @@ class Squad(Base):
 # 3. ECOSSISTEMA HEURÍSTICA (Anti-Cheat)
 # ==========================================
 class PlayerStats(Base):
+    """Metrica consolidada de desempenho usada pela heuristica."""
+
     __tablename__ = "player_stats"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -123,6 +137,8 @@ class PlayerStats(Base):
     player = relationship("Player", back_populates="stats")
 
 class FinancialLog(Base):
+    """Log financeiro para trilha de auditoria anti-fraude."""
+
     __tablename__ = "financial_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -140,6 +156,8 @@ class FinancialLog(Base):
 # 4. SISTEMA DE AUDITORIA (Admin Logs)
 # ==========================================
 class AdminLog(Base):
+    """Registro de acoes administrativas do painel."""
+
     __tablename__ = "admin_logs"
 
     id = Column(Integer, primary_key=True, index=True)

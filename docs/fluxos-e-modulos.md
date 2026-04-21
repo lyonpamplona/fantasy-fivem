@@ -17,7 +17,8 @@ Este arquivo consolida os dois objetivos solicitados:
 8. Darkweb
 9. Operação do painel admin
 10. Ingestão de webhook de partida
-11. Processamento assíncrono por Celery
+11. Processamento assíncrono realtime por Celery
+12. Auditoria noturna por Celery Beat (z-score)
 
 Detalhamento completo: [system-flows.md](./system-flows.md)
 
@@ -26,7 +27,7 @@ Detalhamento completo: [system-flows.md](./system-flows.md)
 ### Backend
 
 - `backend-fantasy`: auth, cards, packs, market, user, squad, websocket, tasks.
-- `backend-heuristics`: admin, webhook e utilitários de moderação.
+- `backend-heuristics`: admin, webhook, worker realtime e tasks agendadas.
 
 ### Frontend
 
@@ -42,5 +43,6 @@ Detalhamento completo: [modules.md](./modules.md)
 ## Referências Cruzadas
 
 - Arquitetura geral: [architecture.md](./architecture.md)
+- Código completo (estrutura/config/deps): [codigo-completo.md](./codigo-completo.md)
 - Endpoints por serviço: [api-map.md](./api-map.md)
 - Riscos/achados da auditoria: [audit-report.md](./audit-report.md)

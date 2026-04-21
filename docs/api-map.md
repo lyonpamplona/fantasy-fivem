@@ -83,3 +83,14 @@
 
 - A maioria das rotas usa JSON simples com `status`, `detail`, ou payload de entidade.
 - Erros de negócio são retornados via `HTTPException` (400/401/403/404).
+
+## 5. Jobs assíncronos (Celery)
+
+### Domínio Fantasy
+
+- `fantasy.process_xp` - aplica progressão de cartas e publica updates no Redis.
+
+### Domínio Heurística
+
+- `process_match_event` - pipeline realtime de suspeita/anomalia.
+- `tasks.analyze_global_deviations` - auditoria noturna por z-score (via Celery Beat).

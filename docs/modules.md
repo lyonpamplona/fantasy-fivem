@@ -13,7 +13,7 @@
 ### Assíncrono e integração
 
 - `celery_app.py`: instancia app Celery com Redis.
-- `tasks.py`: task `process_match_event` (versão síncrona com SQLAlchemy sync).
+- `tasks.py`: task `fantasy.process_xp` (processamento síncrono de XP com SQLAlchemy sync).
 - `worker.py`: versão alternativa de processamento (async + publish Redis).
 - `utils.py`: integração externa para alerta/moderação (Discord/FiveM API).
 
@@ -39,7 +39,7 @@
 
 - `main.py`: bootstrap FastAPI e CORS do painel admin.
 - `database.py`: engine/session assíncras para admin service.
-- `models.py`: modelos equivalentes ao serviço fantasy.
+- `models.py`: modelos compartilhados e específicos de heurística (`PlayerStats`, `FinancialLog`).
 - `auth.py`: helpers JWT.
 - `schemas.py`: schema de payload de evento.
 
@@ -50,8 +50,10 @@
 
 ### Suporte
 
+- `celery_app.py`: configuração Celery + agenda de tarefas (`beat_schedule`).
+- `tasks.py`: auditoria estatística noturna por z-score.
 - `utils.py`: alerta de moderação externo.
-- `worker.py`: processamento assíncrono alternativo de evento.
+- `worker.py`: processamento heurístico realtime e encaminhamento de XP para fantasy.
 - `alembic/`, `init_db.py`, `setup_test.py`: infraestrutura de dados.
 
 ## 3. Frontend Game (`frontend-game`)

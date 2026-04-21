@@ -14,11 +14,11 @@ O repositório está organizado em quatro aplicações principais:
 As páginas detalhadas estão em [`docs/`](./docs):
 
 - [Arquitetura](./docs/architecture.md)
+- [Visão Geral do Código](./docs/codigo-completo.md)
 - [Mapa de Módulos](./docs/modules.md)
 - [Fluxos do Sistema](./docs/system-flows.md)
 - [Fluxos e Módulos (consolidado)](./docs/fluxos-e-modulos.md)
 - [Mapa de APIs](./docs/api-map.md)
-- [Relatório de Auditoria](./docs/audit-report.md)
 
 ## Arquitetura Resumida
 
@@ -29,8 +29,11 @@ flowchart LR
   BF -->|SQLAlchemy Async| DB[(PostgreSQL)]
   BH -->|SQLAlchemy Async| DB
   BF -->|Celery Broker/Backend| R[(Redis)]
+  BH -->|Celery Broker/Backend| R
   WF[worker-fantasy\nCelery] --> R
+  WH[worker-heuristics\nCelery + Beat] --> R
   WF --> DB
+  WH --> DB
 ```
 
 ## Stack
@@ -70,10 +73,6 @@ Arquivos usados no ambiente local:
 - `frontend-admin/.env`
 
 As variáveis obrigatórias e seus papéis estão descritos em [Arquitetura](./docs/architecture.md).
-
-## Estado Atual da Base (Resumo)
-
-A auditoria técnica identificou inconsistências importantes em autenticação, acoplamento entre front/back e migrações. O detalhamento com criticidade e plano de correção está em [Relatório de Auditoria](./docs/audit-report.md).
 
 ## Estrutura do Repositório
 

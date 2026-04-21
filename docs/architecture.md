@@ -34,7 +34,7 @@ Dependências:
 
 ### 2.2 `worker-fantasy` (Celery)
 
-Responsável por processamento assíncrono do evento `process_match_event`.
+Responsável por processamento assíncrono do evento `fantasy.process_xp`.
 
 - Atualiza score/sinais de jogador e evolução de cards.
 - Publica atualizações em canal Redis `ws_card_updates`.
@@ -48,6 +48,8 @@ Responsável por:
 - dossiê de jogador;
 - geração/limpeza de mocks;
 - webhook de partida.
+- processamento heurístico em tempo real;
+- auditoria estatística agendada (z-score).
 
 Entradas principais:
 
@@ -82,6 +84,9 @@ As duas APIs compartilham o mesmo esquema lógico (tabelas principais):
 - `admin_logs`
 - `market_history`
 - `buy_orders`
+- `squads`
+- `player_stats`
+- `financial_logs`
 
 Observação: as duas aplicações importam modelos muito similares, apontando para o mesmo banco.
 
@@ -95,11 +100,13 @@ Observação: as duas aplicações importam modelos muito similares, apontando p
 ### 4.2 Backend -> Banco
 
 - SQLAlchemy assíncrono para APIs FastAPI.
-- Sessão síncrona em tarefas Celery (`tasks.py`) no `backend-fantasy`.
+- Sessão síncrona em tasks Celery no domínio fantasy.
+- Sessão assíncrona em worker/tasks do domínio de heurística.
 
 ### 4.3 Backend -> Mensageria
 
-- `backend-fantasy` + worker usam Redis para broker/result backend.
+- `backend-fantasy` usa Redis para broker/backend Celery e publish realtime.
+- `backend-heuristics` usa Redis para Celery worker e Celery Beat.
 
 ## 5. Deploy Local (Docker Compose)
 
@@ -126,8 +133,10 @@ Serviços definidos:
 ### `backend-heuristics/.env`
 
 - `DATABASE_URL`
+- `REDIS_URL`
 - `ADMIN_PASSWORD`
 - `WEBHOOK_SECRET`
+- `DISCORD_WEBHOOK_URL`
 - `FRONTEND_ADMIN_URL`
 
 ### Frontends
@@ -139,6 +148,9 @@ Serviços definidos:
 
 - Backend de gameplay e backend admin compartilham banco e modelos equivalentes.
 - Existe implementação assíncrona e síncrona de processamento de evento em arquivos distintos (`worker.py` e `tasks.py`), com sobreposição funcional.
+- O domínio de heurística possui dois pipelines assíncronos distintos:
+  - **realtime** (`worker.py`) para eventos de combate;
+  - **batch noturno** (`tasks.py`) para z-score global.
 - Existe rota websocket (`/ws/feed`) sem subscriber Redis ativo no processo da API.
 
 Ver análise de impacto em [Relatório de Auditoria](./audit-report.md).

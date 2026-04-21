@@ -132,15 +132,24 @@ Módulos:
 
 ## 11. Fluxo Assíncrono (Celery)
 
-Fluxo implementado no worker:
+Fluxo realtime implementado no domínio de heurística:
 
-1. Task `process_match_event` recebe payload.
-2. Worker atualiza jogador/cards.
-3. Publica updates em Redis (`ws_card_updates`).
+1. Worker de heurística recebe task `process_match_event`.
+2. Regras anti-cheat calculam `suspicion_score` e podem alertar Discord.
+3. Worker envia task `fantasy.process_xp`.
+4. Task de fantasy atualiza XP/kills/headshots das cartas.
+5. Fantasy publica updates em Redis (`ws_card_updates`).
+
+## 12. Auditoria Noturna (Celery Beat + Z-Score)
+
+1. Celery Beat do domínio heurístico agenda `tasks.analyze_global_deviations` (04:00 UTC).
+2. Task varre `player_stats` com mínimo de kills.
+3. Calcula média + desvio padrão de HS-rate global.
+4. Marca contas fora do intervalo e dispara alertas de auditoria.
 
 Observação:
 
-- Atualmente não há encadeamento explícito do webhook para a task no código lido.
+- Para ativar auditoria noturna, é necessário processo `celery beat` do serviço heurístico.
 
 ## Sequência resumida (exemplo: compra + abertura)
 

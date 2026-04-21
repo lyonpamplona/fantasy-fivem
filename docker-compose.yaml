@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:15
     restart: unless-stopped
+    mem_limit: 1g
     environment:
       POSTGRES_USER: goat
       POSTGRES_PASSWORD: goatpassword
@@ -19,6 +20,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    mem_limit: 256m
     ports:
       - "6379:6379"
     volumes:
@@ -32,6 +34,7 @@ services:
   api-fantasy:
     build: ./backend-fantasy
     restart: unless-stopped
+    mem_limit: 768m
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend-fantasy:/app
@@ -48,6 +51,7 @@ services:
   worker-fantasy:
     build: ./backend-fantasy
     restart: unless-stopped
+    mem_limit: 768m
     command: celery -A celery_app:celery_app worker --loglevel=info
     volumes:
       - ./backend-fantasy:/app
@@ -62,6 +66,7 @@ services:
   api-heuristics:
     build: ./backend-heuristics
     restart: unless-stopped
+    mem_limit: 768m
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
     volumes:
       - ./backend-heuristics:/app
@@ -70,11 +75,44 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend-heuristics/.env
+
+  worker-heuristics:
+    build: ./backend-heuristics
+    restart: unless-stopped
+    mem_limit: 768m
+    command: celery -A celery_app:celery_app worker --loglevel=info
+    volumes:
+      - ./backend-heuristics:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend-heuristics/.env
+
+  beat-heuristics:
+    build: ./backend-heuristics
+    restart: unless-stopped
+    mem_limit: 384m
+    command: celery -A celery_app:celery_app beat --loglevel=info
+    volumes:
+      - ./backend-heuristics:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./backend-heuristics/.env
 
   frontend-game:
     build: ./frontend-game
+    mem_limit: 512m
     volumes:
       - ./frontend-game:/app
       - /app/node_modules
@@ -85,6 +123,7 @@ services:
 
   frontend-admin:
     build: ./frontend-admin
+    mem_limit: 512m
     volumes:
       - ./frontend-admin:/app
       - /app/node_modules
