@@ -1,6 +1,10 @@
+"""Ponto de entrada principal do FastAPI para o servico de heuristica/admin."""
+
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from routers import admin, webhook
 
 app = FastAPI(title="Heuristics API - Admin Service")
@@ -20,6 +24,7 @@ app.add_middleware(
 
 @app.get("/health/live")
 async def health_check():
+    """Retorna status de vida para health checks de orquestracao."""
     return {"status": "alive", "service": "heuristics-admin"}
 
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])

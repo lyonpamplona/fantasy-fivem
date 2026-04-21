@@ -1,8 +1,11 @@
+"""Endpoints de gestao de esquadrao (alocar/remover/consultar)."""
+
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from pydantic import BaseModel
-from datetime import datetime
 
 from database import get_db
 from models import Player, Card
@@ -11,11 +14,14 @@ from routers.auth import get_current_user
 router = APIRouter()
 
 class DeployRequest(BaseModel):
+    """Payload que descreve slot de destino e funcao tatica."""
+
     position: int
     role: str
 
 @router.get("/")
 async def get_squad(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Retorna cards atualmente alocados nos slots do esquadrao."""
     result = await db.execute(
         select(Card)
         .where(Card.owner_id == current_player.id, Card.squad_position != None)
@@ -25,6 +31,7 @@ async def get_squad(db: AsyncSession = Depends(get_db), current_player: Player =
 
 @router.post("/deploy/{card_id}")
 async def deploy_card(card_id: int, payload: DeployRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Aloca ou substitui um operador em uma posicao do esquadrao."""
     if payload.position < 1 or payload.position > 5:
         raise HTTPException(status_code=400, detail="Posição de esquadrão inválida.")
     
@@ -57,6 +64,7 @@ async def deploy_card(card_id: int, payload: DeployRequest, db: AsyncSession = D
 
 @router.post("/remove/{card_id}")
 async def remove_card(card_id: int, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Remove um operador da alocacao do esquadrao."""
     result = await db.execute(select(Card).where(Card.id == card_id, Card.owner_id == current_player.id))
     card = result.scalars().first()
     

@@ -1,14 +1,18 @@
+"""Rotas de perfil de usuario."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+from auth import verify_token
 from database import get_db
 from models import Player
-from auth import verify_token
 
 router = APIRouter()
 
 @router.get("/me/profile")
 async def get_profile(user_id: str = Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    """Retorna dados minimos de perfil do jogador autenticado."""
     user = (await db.execute(select(Player).where(Player.fivem_id == user_id))).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="Jogador não encontrado")

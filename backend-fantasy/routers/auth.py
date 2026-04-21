@@ -1,12 +1,16 @@
+"""Rotas de autenticacao e auxiliares para resolver identidade do jogador."""
+
 import os
+
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+from auth import create_access_token
 from database import get_db
 from models import Player
-from auth import create_access_token
 
 router = APIRouter()
 security = HTTPBearer()
@@ -15,6 +19,7 @@ SECRET_KEY = os.getenv("JWT_SECRET", "fallback_secret")
 ALGORITHM = "HS256"
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    """Resolve o jogador atual a partir do token bearer e provisiona usuario de fallback automaticamente."""
     try:
         # Decodifica o crachá do jogador
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_signature": False})
@@ -45,6 +50,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
 
 @router.get("/dev-login/{steam_id}")
 async def dev_login(steam_id: str, db: AsyncSession = Depends(get_db)):
+    """Emite um token de desenvolvimento e garante um jogador local de teste."""
     stmt = select(Player).where(Player.fivem_id == steam_id)
     result = await db.execute(stmt)
     player = result.scalars().first()

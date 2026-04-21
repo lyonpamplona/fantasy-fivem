@@ -1,6 +1,9 @@
+"""Endpoints de ingestao de webhook para telemetria de partida."""
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
 from database import get_db
 from models import Player
 
@@ -8,6 +11,7 @@ router = APIRouter()
 
 @router.post("/match_event")
 async def process_event(request: Request, db: AsyncSession = Depends(get_db)):
+    """Processa um evento bruto de partida e incrementa as heuristicas de suspeita."""
     try:
         payload = await request.json()
         shooter_id = payload.get("shooter_id")

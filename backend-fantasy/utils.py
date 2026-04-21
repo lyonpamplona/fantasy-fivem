@@ -1,4 +1,7 @@
+"""Auxiliares de integracao externa para alertas de moderacao."""
+
 import os
+
 import httpx
 
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_ADMIN_WEBHOOK")
@@ -6,6 +9,10 @@ FIVEM_SERVER_API_URL = os.getenv("FIVEM_SERVER_API_URL")
 FIVEM_API_KEY = os.getenv("FIVEM_API_KEY")
 
 def alert_server_moderation(fivem_id: str, nickname: str, reason: str):
+    """Notifica o Discord e o endpoint opcional de moderacao do FiveM.
+
+    Falhas sao propositalmente ignoradas para nao interromper o fluxo de gameplay.
+    """
     try:
         discord_payload = {
             "content": f"🚨 **ALERTA DO FANTASY GAME** 🚨\n**Jogador:** {nickname} (ID: {fivem_id})\n**Motivo:** {reason}\n**Ação:** Status alterado para MONITORED."

@@ -1,20 +1,24 @@
-import os
-import json
+"""Implementacao alternativa de worker Celery para tratar eventos de partida."""
+
 import asyncio
+import json
+import os
 from datetime import datetime
-from redis import asyncio as aioredis
+
 from celery import Celery
-from sqlalchemy.ext.asyncio import AsyncSession
-from database import AsyncSessionLocal
-from models import Player, Card
-from sqlalchemy.future import select
 from dotenv import load_dotenv
+from redis import asyncio as aioredis
+from sqlalchemy.future import select
+
+from database import AsyncSessionLocal
+from models import Card, Player
 
 load_dotenv()
 
 celery_app = Celery(__name__, broker=os.getenv("REDIS_URL"), backend=os.getenv("REDIS_URL"))
 
 async def async_process_event(data):
+    """Processa evento de partida de forma assincrona e publica atualizacoes de cards no Redis."""
     async with AsyncSessionLocal() as db:
         stmt = select(Player).where(Player.fivem_id == data['killer_id'])
         result = await db.execute(stmt)
@@ -87,4 +91,5 @@ async def async_process_event(data):
 
 @celery_app.task(name="process_match_event")
 def process_match_event(data):
+    """Wrapper de task Celery para o processamento assincrono de eventos de partida."""
     asyncio.run(async_process_event(data))

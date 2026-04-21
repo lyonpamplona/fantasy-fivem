@@ -1,7 +1,10 @@
+"""Utilitarios de bootstrap do banco para o servico de heuristica/admin."""
+
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
@@ -14,5 +17,6 @@ AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 Base = declarative_base()
 
 async def get_db():
+    """Fornece uma sessao assincrona do SQLAlchemy por requisicao."""
     async with AsyncSessionLocal() as session:
         yield session

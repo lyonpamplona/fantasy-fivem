@@ -1,3 +1,5 @@
+"""Auxiliares JWT e dependencias FastAPI para autenticacao/autorizacao."""
+
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +17,7 @@ ALGORITHM = "HS256"
 
 
 def create_access_token(data: dict, expires_in: timedelta | None = None):
+    """Cria um token JWT assinado com expiracao."""
     to_encode = data.copy()
     expire_at = datetime.now(timezone.utc) + (expires_in or timedelta(days=7))
     to_encode.update({"exp": expire_at})
@@ -22,6 +25,7 @@ def create_access_token(data: dict, expires_in: timedelta | None = None):
 
 
 def create_admin_token():
+    """Cria um token de curta duracao com claims de papel administrativo."""
     return create_access_token(
         {"sub": "admin", "role": "admin"},
         expires_in=timedelta(hours=12),
@@ -29,6 +33,7 @@ def create_admin_token():
 
 
 def _extract_token_from_request(request: Request):
+    """Extrai o token primeiro do cookie e depois do header Authorization."""
     token = request.cookies.get("access_token")
     if token:
         return token
@@ -41,6 +46,7 @@ def _extract_token_from_request(request: Request):
 
 
 def _decode_or_unauthorized(token: str):
+    """Decodifica JWT ou lanca HTTP 401 quando o token e invalido."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.PyJWTError as exc:
@@ -48,6 +54,7 @@ def _decode_or_unauthorized(token: str):
 
 
 async def verify_token(request: Request):
+    """Retorna o sujeito autenticado (`sub`) de um JWT valido."""
     token = _extract_token_from_request(request)
     if not token:
         raise HTTPException(status_code=401, detail="Token ausente")
@@ -61,6 +68,7 @@ async def verify_token(request: Request):
 
 
 async def verify_admin_token(request: Request):
+    """Garante que a requisicao carregue um JWT valido com `role=admin`."""
     token = _extract_token_from_request(request)
     if not token:
         raise HTTPException(status_code=401, detail="Token ausente")

@@ -1,6 +1,11 @@
+"""Schemas Pydantic compartilhados pelas entradas da API."""
+
 from pydantic import BaseModel
 
+
 class WebhookPayload(BaseModel):
+    """Contrato de payload esperado de webhooks externos de partida."""
+
     killer_id: str
     victim_id: str
     headshot: bool

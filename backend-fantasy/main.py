@@ -1,8 +1,12 @@
+"""Ponto de entrada principal do FastAPI para o servico fantasy voltado ao gameplay."""
+
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
-from routers import auth, cards, packs, market, websocket, users, squad
+
+from database import Base, engine
+from routers import auth, cards, market, packs, squad, users, websocket
 
 app = FastAPI(title="Fantasy API - Game Service")
 
@@ -16,11 +20,13 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
+    """Cria as tabelas do banco na inicializacao quando em modo local/dev."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 @app.get("/health/live")
 async def health_check():
+    """Retorna status de vida para health checks de orquestracao."""
     return {"status": "alive", "service": "fantasy-game"}
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])

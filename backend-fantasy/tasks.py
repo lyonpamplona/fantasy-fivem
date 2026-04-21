@@ -1,10 +1,14 @@
-import os
+"""Tasks Celery para processamento assincrono de eventos de partida."""
+
 import json
+import os
+
 import redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from celery_app import celery_app
-from models import Player, Card
+from models import Card, Player
 from utils import alert_server_moderation
 
 DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC")
@@ -14,6 +18,7 @@ redis_client = redis.from_url(os.getenv("REDIS_URL"))
 
 @celery_app.task(name="process_match_event")
 def process_match_event(payload: dict):
+    """Processa um unico evento de partida e atualiza o estado de jogador/cards."""
     db = SessionLocal()
     try:
         killer_id = payload['killer_id']

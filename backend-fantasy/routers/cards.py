@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from typing import List
-from pydantic import BaseModel
+"""Endpoints de inventario de cards, forja e contratos."""
+
 import random
 import string
 from datetime import datetime, timedelta
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from database import get_db
 from models import Player, Card
@@ -14,25 +17,34 @@ from routers.auth import get_current_user
 router = APIRouter()
 
 class ForgeRequest(BaseModel):
+    """Payload de entrada para forjar cards."""
+
     card_ids: List[int]
 
 class ContractRequest(BaseModel):
+    """Payload de entrada para assinar contrato em um card."""
+
     duration_days: int
 
 def generate_serial():
+    """Gera um sufixo serial aleatorio usado por cards forjados."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 @router.get("/user/me")
 async def get_my_cards(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Retorna todos os cards atualmente pertencentes ao jogador autenticado."""
     result = await db.execute(select(Card).where(Card.owner_id == current_player.id))
     return result.scalars().all()
 
 class ForgeRequest(BaseModel):
+    """Requisicao de forja com gasto opcional de boost coins."""
+
     card_ids: List[int]
     boost_coins: int = 0
 
 @router.post("/forge")
 async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Consome cinco cards e gera um card forjado com base em probabilidades ponderadas por raridade."""
     if len(payload.card_ids) != 5:
         raise HTTPException(status_code=400, detail="A Forja exige exatamente 5 operadores.")
 
@@ -101,6 +113,7 @@ async def forge_cards(payload: ForgeRequest, db: AsyncSession = Depends(get_db),
 
 @router.post("/{card_id}/contract")
 async def sign_contract(card_id: int, payload: ContractRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Bloqueia um card em operacao por dias fixos e calcula rendimento passivo."""
     if payload.duration_days not in [3, 7, 14]:
         raise HTTPException(status_code=400, detail="Duração de contrato inválida.")
 

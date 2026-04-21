@@ -1,12 +1,17 @@
+"""Auxiliar de seed para testes manuais locais dos fluxos de auth/perfil."""
+
 import asyncio
 import os
-import jwt
 from datetime import datetime, timedelta
-from database import AsyncSessionLocal
-from models import Player
+
+import jwt
 from sqlalchemy.future import select
 
+from database import AsyncSessionLocal
+from models import Player
+
 async def setup_test():
+    """Garante que um jogador de teste exista e imprime um JWT valido."""
     async with AsyncSessionLocal() as db:
         # 1. Tenta achar o jogador 100
         stmt = select(Player).where(Player.fivem_id == "100")

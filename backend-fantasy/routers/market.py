@@ -1,25 +1,35 @@
+"""Endpoints de mercado para loja oficial, P2P e fluxos de darkweb."""
+
+import math
+import time
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
+
 from database import get_db
 from models import Player, Card, MarketListing, PlayerPack
 from routers.auth import get_current_user
-import time
-import math
-from datetime import datetime, timedelta
 
 router = APIRouter()
 
 class SellRequest(BaseModel):
+    """Payload para criar um anuncio P2P."""
+
     price: int
     is_auction: bool = False
 
 class BuyStoreRequest(BaseModel):
+    """Payload usado para trava otimista de preco em compras da loja."""
+
     expected_price: int
 
 class BidRequest(BaseModel):
+    """Payload para enviar um lance de leilao."""
+
     bid_amount: int
 
 BASE_PACK_PRICES = {
@@ -33,6 +43,7 @@ BASE_PACK_PRICES = {
 DARKWEB_PACK_PRICE = 50000
 
 def calculate_dynamic_price(pack_type: str, base_price: int) -> dict:
+    """Calcula a flutuacao horaria deterministica para um tipo de pack."""
     current_hour = int(time.time() / 3600)
     seed = current_hour + int(pack_type)
     fluctuation_multiplier = math.sin(seed) 
@@ -47,6 +58,7 @@ def calculate_dynamic_price(pack_type: str, base_price: int) -> dict:
     }
 
 def generate_mock_history(card_id: int, base_price: int) -> list:
+    """Gera historico sintetico de preco usado pelos graficos."""
     history = []
     current_day = int(time.time() / 86400)
     for i in range(7, -1, -1):
@@ -59,6 +71,7 @@ def generate_mock_history(card_id: int, base_price: int) -> list:
 
 @router.get("/store")
 async def get_store_prices():
+    """Retorna precos atuais da loja com metadados de volatilidade."""
     packs = []
     for p_type, base_price in BASE_PACK_PRICES.items():
         packs.append(calculate_dynamic_price(p_type, base_price))
@@ -66,6 +79,7 @@ async def get_store_prices():
 
 @router.post("/buy/{pack_type}")
 async def buy_store_pack(pack_type: str, payload: BuyStoreRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Compra um pack da loja oficial se a cotacao esperada ainda corresponder a cotacao atual."""
     if pack_type not in BASE_PACK_PRICES:
         raise HTTPException(status_code=400, detail="Tipo de pacote inválido.")
         
@@ -93,6 +107,7 @@ async def buy_store_pack(pack_type: str, payload: BuyStoreRequest, db: AsyncSess
 
 @router.get("/p2p")
 async def get_p2p_listings(db: AsyncSession = Depends(get_db)):
+    """Lista anuncios P2P ativos com payload de card carregado antecipadamente."""
     result = await db.execute(
         select(MarketListing).options(selectinload(MarketListing.card)).where(MarketListing.is_active == True)
     )
@@ -100,6 +115,7 @@ async def get_p2p_listings(db: AsyncSession = Depends(get_db)):
 
 @router.get("/p2p/history/{card_id}")
 async def get_card_market_history(card_id: int, db: AsyncSession = Depends(get_db)):
+    """Retorna pontos sinteticos de historico para um card."""
     result = await db.execute(select(Card).where(Card.id == card_id))
     card = result.scalars().first()
     if not card:
@@ -110,6 +126,7 @@ async def get_card_market_history(card_id: int, db: AsyncSession = Depends(get_d
 
 @router.post("/p2p/sell/{card_id}")
 async def sell_card(card_id: int, payload: SellRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Cria ou ativa um anuncio para um card do jogador."""
     result = await db.execute(select(Card).where(Card.id == card_id, Card.owner_id == current_player.id))
     card = result.scalars().first()
 
@@ -133,6 +150,7 @@ async def sell_card(card_id: int, payload: SellRequest, db: AsyncSession = Depen
 
 @router.post("/p2p/buy/{listing_id}")
 async def buy_p2p_card(listing_id: int, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Executa transferencia de compra direta para um anuncio sem leilao."""
     result = await db.execute(select(MarketListing).options(selectinload(MarketListing.card)).where(MarketListing.id == listing_id, MarketListing.is_active == True))
     listing = result.scalars().first()
 
@@ -161,6 +179,7 @@ async def buy_p2p_card(listing_id: int, db: AsyncSession = Depends(get_db), curr
 
 @router.post("/p2p/bid/{listing_id}")
 async def place_bid(listing_id: int, payload: BidRequest, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Registra um lance e reembolsa o maior lance anterior quando necessario."""
     result = await db.execute(select(MarketListing).where(MarketListing.id == listing_id, MarketListing.is_active == True))
     listing = result.scalars().first()
 
@@ -190,6 +209,7 @@ async def place_bid(listing_id: int, payload: BidRequest, db: AsyncSession = Dep
 
 @router.delete("/p2p/cancel/{listing_id}")
 async def cancel_listing(listing_id: int, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Desativa anuncio e reembolsa o maior lance em leiloes ativos."""
     result = await db.execute(select(MarketListing).where(MarketListing.id == listing_id, MarketListing.seller_id == current_player.id, MarketListing.is_active == True))
     listing = result.scalars().first()
 
@@ -207,6 +227,7 @@ async def cancel_listing(listing_id: int, db: AsyncSession = Depends(get_db), cu
 
 @router.get("/darkweb/status")
 async def get_darkweb_status():
+    """Retorna disponibilidade da darkweb e preco atual de packs classificados."""
     current_hour = int(time.time() / 3600)
     is_active = (current_hour % 3) == 0 
     return {
@@ -217,6 +238,7 @@ async def get_darkweb_status():
 
 @router.post("/darkweb/buy")
 async def buy_darkweb_pack(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Compra um pack classificado enquanto a janela da darkweb esta ativa."""
     current_hour = int(time.time() / 3600)
     if (current_hour % 3) != 0:
         raise HTTPException(status_code=400, detail="O Node da Dark Web encontra-se inativo.")

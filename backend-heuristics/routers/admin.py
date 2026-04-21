@@ -1,18 +1,23 @@
+"""Endpoints administrativos para moderacao e controles operacionais."""
+
 import os
 import random
-from fastapi import APIRouter, Depends, HTTPException, Body
+
+from dotenv import load_dotenv
+from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func, update
-from dotenv import load_dotenv
+
 from database import get_db
-from models import Player, Card, AdminLog
+from models import AdminLog, Card, Player
 
 load_dotenv()
 router = APIRouter()
 
 @router.post("/login")
 async def admin_login(password: str = Body(..., embed=True)):
+    """Valida a senha de admin e emite um token local placeholder de administrador."""
     admin_secret = os.getenv("ADMIN_PASSWORD")
     if not admin_secret or password != admin_secret:
         raise HTTPException(status_code=401, detail="Credencial invalida")
@@ -20,6 +25,7 @@ async def admin_login(password: str = Body(..., embed=True)):
 
 @router.get("/suspects")
 async def get_suspects(db: AsyncSession = Depends(get_db)):
+    """Retorna ranking de suspeitos com metricas agregadas de kills/headshots."""
     stmt = select(
         Player,
         func.coalesce(func.sum(Card.kills), 0).label('total_kills'),
@@ -40,6 +46,7 @@ async def get_suspects(db: AsyncSession = Depends(get_db)):
 
 @router.post("/toggle_quarantine/{player_id}")
 async def toggle_quarantine(player_id: int, db: AsyncSession = Depends(get_db)):
+    """Alterna a flag de quarentena do jogador alvo e registra a acao."""
     try:
         player = (await db.execute(select(Player).where(Player.id == player_id))).scalars().first()
         if not player:
@@ -54,6 +61,7 @@ async def toggle_quarantine(player_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/player/{player_id}/dossier")
 async def get_player_dossier(player_id: int, db: AsyncSession = Depends(get_db)):
+    """Retorna analises sinteticas de dossie para o jogador selecionado."""
     player = (await db.execute(select(Player).where(Player.id == player_id))).scalars().first()
     if not player:
         raise HTTPException(status_code=404)
@@ -79,6 +87,7 @@ async def get_player_dossier(player_id: int, db: AsyncSession = Depends(get_db))
 
 @router.post("/seed_mocks")
 async def seed_mocks(db: AsyncSession = Depends(get_db)):
+    """Insere cenarios mockados de suspeitos para demonstracao do dashboard."""
     try:
         names = ["Klaus_Cheater", "Legit_Player", "DMA_Ghost", "Pro_Sniper"]
         for name in names:
@@ -99,6 +108,7 @@ async def seed_mocks(db: AsyncSession = Depends(get_db)):
 
 @router.delete("/clear_mocks")
 async def clear_mocks(db: AsyncSession = Depends(get_db)):
+    """Remove jogadores/cards mockados criados por `seed_mocks`."""
     try:
         players = (await db.execute(select(Player).where(Player.nickname.in_(["Klaus_Cheater", "Legit_Player", "DMA_Ghost", "Pro_Sniper"])))).scalars().all()
         for p in players:
@@ -115,6 +125,7 @@ async def clear_mocks(db: AsyncSession = Depends(get_db)):
 
 @router.post("/inject_coins")
 async def inject_coins(db: AsyncSession = Depends(get_db)):
+    """Incrementa em lote o saldo da carteira de todas as contas."""
     try:
         result = await db.execute(update(Player).values(wallet_balance=Player.wallet_balance + 500000))
         db.add(AdminLog(action="INJECT_COINS", details=f"500k injetado em {result.rowcount} contas"))

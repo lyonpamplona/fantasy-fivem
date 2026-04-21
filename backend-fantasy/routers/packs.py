@@ -1,11 +1,15 @@
+"""Endpoints de inventario e abertura de packs."""
+
+import random
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
 from database import get_db
 from models import Player, PlayerPack, Card
 from routers.auth import get_current_user
-import random
-import uuid
 
 router = APIRouter()
 
@@ -28,11 +32,13 @@ COST_MAP = {
 
 @router.get("/user/me")
 async def get_my_packs(db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Retorna todos os packs nao abertos do jogador autenticado."""
     packs = (await db.execute(select(PlayerPack).where(PlayerPack.owner_id == current_player.id))).scalars().all()
     return [{"id": p.id, "pack_type": p.pack_type, "amount": p.amount} for p in packs]
 
 @router.post("/open/{pack_type}")
 async def open_pack(pack_type: str, db: AsyncSession = Depends(get_db), current_player: Player = Depends(get_current_user)):
+    """Consome um pack e gera cards seguindo probabilidades de raridade."""
     if pack_type not in PACK_CONFIG:
         raise HTTPException(status_code=400, detail="Módulo inválido.")
 

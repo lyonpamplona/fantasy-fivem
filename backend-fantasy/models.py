@@ -1,94 +1,150 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
 
+# ==========================================
+# 1. CORE: JOGADORES (Partilhado por ambos)
+# ==========================================
 class Player(Base):
     __tablename__ = "players"
+
     id = Column(Integer, primary_key=True, index=True)
     fivem_id = Column(String, unique=True, index=True)
     nickname = Column(String)
-    is_vip = Column(Boolean, default=False)
-    is_quarantined = Column(Boolean, default=False)
-    is_monitored = Column(Boolean, default=False)
-    suspicion_score = Column(Float, default=0.0)
-    last_suspicion_update = Column(DateTime, default=func.now())
-    wallet_balance = Column(Float, default=0.0)
-    squad_id = Column(Integer, nullable=True)
+    wallet_balance = Column(Integer, default=0)
     
-    cards = relationship("Card", back_populates="owner")
-    listings = relationship("MarketListing", back_populates="seller", foreign_keys="MarketListing.seller_id")
-    packs = relationship("PlayerPack", back_populates="owner")
+    # Heurística
+    suspicion_score = Column(Float, default=0.0)
+    is_quarantined = Column(Boolean, default=False)
+    is_vip = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Relações Fantasy
+    cards = relationship("Card", back_populates="owner", cascade="all, delete-orphan")
+    packs = relationship("PlayerPack", back_populates="owner", cascade="all, delete-orphan")
+    squads = relationship("Squad", back_populates="owner", cascade="all, delete-orphan")
+    
+    # Relações Heurística
+    stats = relationship("PlayerStats", back_populates="player", uselist=False, cascade="all, delete-orphan")
+    financial_logs = relationship("FinancialLog", back_populates="player", cascade="all, delete-orphan")
+
+
+# ==========================================
+# 2. ECOSSISTEMA FANTASY (Cartas, Mercado)
+# ==========================================
 class Card(Base):
     __tablename__ = "cards"
+
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("players.id"))
+    serial_number = Column(String, unique=True, index=True)
+    
     player_nickname = Column(String)
-    rarity = Column(String)
-    serial_number = Column(String)
+    rarity = Column(String) # COMMON, RARE, EPIC, LEGENDARY, MYTHIC
     level = Column(Integer, default=1)
-    xp = Column(Integer, default=0)
+    
+    # Atributos Visuais e Jogo
     kills = Column(Integer, default=0)
     headshots = Column(Integer, default=0)
-    float_value = Column(Float, default=0.5)
-    
-    squad_position = Column(Integer, nullable=True)
-    squad_role = Column(String, nullable=True)
-    deployment_cost = Column(Integer, default=10)
-    contract_points = Column(Integer, default=7)
-    
+    float_value = Column(Float, default=1.0)
     is_forged = Column(Boolean, default=False)
+    
+    # Contratos e Squad
+    contract_points = Column(Integer, default=7)
+    deployment_cost = Column(Integer, default=10)
     contract_end_date = Column(DateTime, nullable=True)
-    contract_yield = Column(Float, default=0.0)
+    squad_position = Column(Integer, nullable=True)
 
     owner = relationship("Player", back_populates="cards")
     market_listing = relationship("MarketListing", back_populates="card", uselist=False)
 
-class MarketListing(Base):
-    __tablename__ = "market_listings"
-    id = Column(Integer, primary_key=True, index=True)
-    card_id = Column(Integer, ForeignKey("cards.id"), unique=True)
-    seller_id = Column(Integer, ForeignKey("players.id"))
-    price = Column(Float)
-    
-    is_active = Column(Boolean, default=True)
-    is_auction = Column(Boolean, default=False)
-    current_bid = Column(Float, nullable=True)
-    highest_bidder_id = Column(Integer, ForeignKey("players.id"), nullable=True)
-    
-    created_at = Column(DateTime, default=func.now())
-    
-    card = relationship("Card", back_populates="market_listing")
-    seller = relationship("Player", back_populates="listings", foreign_keys=[seller_id])
-    highest_bidder = relationship("Player", foreign_keys=[highest_bidder_id])
-
-class AdminLog(Base):
-    __tablename__ = "admin_logs"
-    id = Column(Integer, primary_key=True, index=True)
-    action = Column(String)
-    target_player_id = Column(Integer, nullable=True)
-    details = Column(String)
-    created_at = Column(DateTime, default=func.now())
-
 class PlayerPack(Base):
     __tablename__ = "player_packs"
+
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("players.id"))
-    pack_type = Column(String)
-    amount = Column(Integer, default=0)
+    pack_type = Column(String) # 1, 3, 5, 7, 10, CLASSIFIED
+    amount = Column(Integer, default=1)
+
     owner = relationship("Player", back_populates="packs")
 
-class MarketHistory(Base):
-    __tablename__ = "market_history"
-    id = Column(Integer, primary_key=True, index=True)
-    rarity = Column(String)
-    price = Column(Float)
-    sold_at = Column(DateTime, default=func.now())
+class MarketListing(Base):
+    __tablename__ = "market_listings"
 
-class BuyOrder(Base):
-    __tablename__ = "buy_orders"
     id = Column(Integer, primary_key=True, index=True)
-    buyer_id = Column(Integer, ForeignKey("players.id"))
-    target_rarity = Column(String)
-    max_price = Column(Float)
-    created_at = Column(DateTime, default=func.now())
+    card_id = Column(Integer, ForeignKey("cards.id"))
+    seller_id = Column(Integer, ForeignKey("players.id"))
+    
+    price = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Leilões
+    is_auction = Column(Boolean, default=False)
+    current_bid = Column(Integer, nullable=True)
+    highest_bidder_id = Column(Integer, ForeignKey("players.id"), nullable=True)
+
+    card = relationship("Card", back_populates="market_listing")
+
+
+class Squad(Base):
+    __tablename__ = "squads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("players.id"))
+    name = Column(String, default="Alpha Squad")
+    active = Column(Boolean, default=True)
+
+    owner = relationship("Player", back_populates="squads")
+
+
+# ==========================================
+# 3. ECOSSISTEMA HEURÍSTICA (Anti-Cheat)
+# ==========================================
+class PlayerStats(Base):
+    __tablename__ = "player_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("players.id"))
+    
+    kills = Column(Integer, default=0)
+    deaths = Column(Integer, default=0)
+    headshots = Column(Integer, default=0)
+    torso = Column(Integer, default=0)
+    arms = Column(Integer, default=0)
+    legs = Column(Integer, default=0)
+    accuracy = Column(Float, default=0.0)
+    kd = Column(Float, default=1.0)
+    
+    # Gráfico de 7 Dias para a Dashboard
+    kd_history = Column(JSON, default=list) 
+
+    player = relationship("Player", back_populates="stats")
+
+class FinancialLog(Base):
+    __tablename__ = "financial_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("players.id"))
+    
+    transaction_type = Column(String) # Ex: 'RMT_SUSPECT', 'MARKET_BUY', 'INJECT'
+    target_id = Column(String)
+    amount = Column(Integer, default=0)
+    is_suspicious = Column(Boolean, default=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    player = relationship("Player", back_populates="financial_logs")
+    
+# ==========================================
+# 4. SISTEMA DE AUDITORIA (Admin Logs)
+# ==========================================
+class AdminLog(Base):
+    __tablename__ = "admin_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_username = Column(String, default="admin")
+    action = Column(String)  # Ex: 'LOGIN', 'BAN', 'INJECT_COINS'
+    target_id = Column(String, nullable=True) # ID do jogador afetado
+    details = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
